@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Agent 하네스 아키텍처 — AX Tech WG</title>
+<style>
+:root{
+  --bg:#070e1a; --panel:#0d1b2a; --border:#1a3a5c; --accent:#00d4ff;
+  --text:#c8d8e8; --text-bright:#eaf4ff; --muted:#6f86a3;
+  --scz:#1565c0; --recipe:#8e24aa; --skill:#3949ab; --agent:#6a1b9a;
+  --suz:#2e7d52; --warn:#ff5722; --ok:#4caf50; --user:#0a3d62;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo',sans-serif;
+  background:radial-gradient(ellipse at 50% 10%, #081423 0%, #02060b 75%);
+  color:var(--text); line-height:1.6;
+}
+a{color:inherit}
+
+/* ── Top Header ── */
+.top-header{
+  position:sticky; top:0; z-index:20;
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  padding:22px 28px;
+  background:linear-gradient(135deg,#0a1628 0%,#0d1f3c 100%);
+  border-bottom:2px solid var(--accent);
+  box-shadow:0 4px 24px rgba(0,0,0,.35);
+}
+.top-header h1{font-size:22px;color:var(--accent);font-weight:900;letter-spacing:.5px}
+.top-header .meta{font-size:12px;color:var(--muted);margin-top:4px}
+.nav-tabs{display:flex;gap:8px;flex-wrap:wrap}
+.nav-tab{
+  padding:8px 14px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--border); background:rgba(13,27,42,.8); color:var(--muted);
+  font-size:12px; font-weight:700; transition:.15s ease;
+}
+.nav-tab:hover,.nav-tab.active{border-color:var(--accent); color:#07111d}
+.nav-tab.active{background:var(--accent)}
+
+/* ── Layout ── */
+.content{max-width:1220px;margin:0 auto;padding:24px}
+.section{display:none}
+.section.active{display:block}
+
+/* ── Core Message Box (배너 대체) ── */
+.core-message-box{
+  margin-bottom:18px; padding:18px 20px; border-radius:12px;
+  background:linear-gradient(135deg,#0d1b2a,#0a1f35);
+  border:1.5px solid var(--accent);
+}
+.core-msg-lines{ display:flex; flex-direction:column; gap:4px; margin-bottom:14px; }
+.core-msg-line{font-size:13px;font-weight:700;color:var(--text-bright);line-height:1.9}
+.core-msg-line:first-child{color:var(--accent);font-size:15px;font-weight:900}
+.core-msg-line .dim{font-weight:400;color:var(--muted)}
+.org-badge-strip{
+  display:flex; gap:8px; flex-wrap:wrap;
+  padding-top:12px; border-top:1px solid rgba(26,58,92,.5);
+}
+.org-badge{padding:4px 12px;border-radius:999px;font-size:11px;font-weight:800}
+.org-badge.org-agent{background:rgba(106,27,154,.2);border:1px solid rgba(106,27,154,.55);color:#ce93d8}
+.org-badge.org-scz  {background:rgba(21,101,192,.2);border:1px solid rgba(21,101,192,.55);color:#64b5f6}
+.org-badge.org-suz  {background:rgba(46,125,82,.2); border:1px solid rgba(46,125,82,.55); color:#81c784}
+
+/* ── No-Direct-Access Badge ── */
+.no-direct-access-badge{
+  margin-top:6px; padding:4px 8px; border-radius:6px;
+  background:rgba(255,87,34,.1); border:1px solid rgba(255,87,34,.4);
+  color:#ff8a65; font-size:9px; font-weight:800; text-align:center; line-height:1.5;
+}
+
+/* ── SUZ Connect Strip ── */
+.suz-connect-strip{
+  display:flex; align-items:center; justify-content:space-between;
+  margin:8px 0; padding:8px 16px; border-radius:8px;
+  background:rgba(46,125,82,.07); border:1px dashed rgba(46,125,82,.3); font-size:10px;
+}
+.suz-connect-item{display:flex;flex-direction:column;gap:2px}
+.suz-connect-item.right{text-align:right}
+.suz-con-label{font-weight:800;color:#81c784}
+.suz-con-desc{color:var(--muted)}
+.suz-connect-center{font-size:18px;color:#81c784;font-weight:900}
+
+/* ── Access Scope Box ── */
+.access-scope-box{
+  margin:12px 0 8px; padding:12px 14px; border-radius:10px;
+  background:rgba(13,27,42,.7); border:1px dashed rgba(0,212,255,.3);
+}
+.access-scope-title{font-size:10px;font-weight:800;color:var(--accent);margin-bottom:8px;letter-spacing:.5px}
+.access-scope-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.access-item{font-size:10px;padding:3px 0}
+.access-item.allow{color:#81c784}
+.access-item.deny{color:var(--muted)}
+
+/* ── Principle Box (데이터 흐름 최상단) ── */
+.principle-box{
+  margin-bottom:16px; padding:16px 18px; border-radius:12px;
+  background:rgba(13,27,42,.8); border:1.5px solid var(--accent);
+  display:flex; flex-direction:column; gap:8px;
+}
+.principle-row{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text)}
+.principle-badge{padding:3px 10px;border-radius:999px;font-size:10px;font-weight:800;flex-shrink:0}
+.principle-badge.scz  {background:rgba(21,101,192,.25);color:#64b5f6;border:1px solid rgba(21,101,192,.5)}
+.principle-badge.agent{background:rgba(106,27,154,.25);color:#ce93d8;border:1px solid rgba(106,27,154,.5)}
+.principle-key{
+  font-size:11px;font-weight:800;color:var(--warn);
+  border-top:1px solid rgba(26,58,92,.4);padding-top:8px;margin-top:4px;
+}
+
+/* ── Swimlane ── */
+.swimlane-wrap{border:1px solid var(--border);border-radius:12px;overflow:hidden;margin:16px 0}
+.swimlane-header{
+  display:grid;grid-template-columns:0.8fr 1.8fr 1.8fr 0.9fr;
+  background:#0a1628;border-bottom:2px solid var(--border);
+}
+.sl-col{
+  padding:13px 16px;font-size:12px;font-weight:800;letter-spacing:.5px;
+  display:flex;flex-direction:column;gap:3px;
+}
+.sl-col.user {color:#4fc3f7;border-right:1px solid var(--border)}
+.sl-col.scz  {color:#64b5f6;border-right:1px solid var(--border)}
+.sl-col.agent{color:#ce93d8;border-right:1px solid var(--border)}
+.sl-col.suz  {color:#81c784}
+.sl-org{font-size:10px;font-weight:400;color:var(--muted);margin-top:1px}
+.swimlane-body{display:flex;flex-direction:column}
+.sl-row{
+  display:grid;grid-template-columns:0.8fr 1.8fr 1.8fr 0.9fr;
+  border-bottom:1px solid rgba(26,58,92,.3);min-height:80px;
+}
+.sl-row-group{min-height:175px}
+.sl-cell{
+  padding:14px 16px;border-right:1px solid rgba(26,58,92,.25);
+  position:relative;font-size:12px;
+}
+.sl-cell:last-child{border-right:none}
+.sl-cell.empty{background:rgba(0,0,0,.15)}
+.sl-cell.user {background:rgba(10,61,98,.06)}
+.sl-cell.scz  {background:rgba(21,101,192,.05)}
+.sl-cell.agent{background:rgba(106,27,154,.05)}
+.sl-cell.suz  {background:rgba(46,125,82,.05)}
+.sl-cell.active-cell{background:rgba(255,255,255,.03)}
+.sl-cell.group-cell{background:rgba(21,101,192,.09)}
+.sl-step{font-size:12px;font-weight:800;color:var(--text-bright);margin-bottom:5px}
+.sl-desc{font-size:11px;line-height:1.7;color:var(--text)}
+.sl-arrow{font-size:11px;font-weight:800;margin-top:8px}
+.sl-arrow.right{color:var(--accent);text-align:right}
+.sl-arrow.left {color:var(--accent);text-align:left}
+.sl-arrow.transfer-mcp {color:#ab47bc}
+.sl-arrow.transfer-pii {color:#ff7043}
+.sl-transfer-label{
+  display:inline-block;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:800;
+  background:rgba(171,71,188,.15);border:1px solid rgba(171,71,188,.35);color:#ce93d8;margin-top:5px;
+}
+
+/* ── Flow Detail Accordion ── */
+.flow-detail-accordion{margin-top:12px}
+.flow-detail-summary{
+  cursor:pointer;padding:10px 14px;background:rgba(13,27,42,.7);
+  border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:700;
+  color:var(--muted);list-style:none;
+}
+.flow-detail-summary::-webkit-details-marker{display:none}
+.flow-detail-summary:hover{color:var(--text);border-color:var(--accent)}
+details[open] .flow-detail-summary{border-radius:8px 8px 0 0;border-bottom-color:transparent}
+
+/* ── Warning Banner (레시피 페이지) ── */
+.warning-banner{
+  display:flex;align-items:flex-start;gap:12px;margin-bottom:18px;
+  padding:14px 16px;border-radius:10px;
+  background:rgba(255,193,7,.06);border:1.5px solid rgba(255,193,7,.4);
+}
+.warning-icon{font-size:20px;flex-shrink:0;margin-top:2px}
+.warning-title{font-size:13px;font-weight:800;color:#ffe082;margin-bottom:4px}
+.warning-desc{font-size:11px;color:var(--text);line-height:1.6}
+
+/* ── Skill Catalog Note ── */
+.skill-catalog-note{
+  font-size:11px;color:var(--text);margin-bottom:14px;padding:10px 12px;
+  background:rgba(13,27,42,.6);border-radius:8px;
+  border-left:3px solid rgba(57,73,171,.5);line-height:1.7;
+}
+
+/* ── Loop Owner Badge ── */
+.loop-owner{
+  display:inline-block;padding:2px 8px;border-radius:999px;font-size:9px;font-weight:800;
+  background:rgba(46,125,82,.2);border:1px solid rgba(46,125,82,.5);color:#81c784;margin:4px 0 6px;
+}
+
+/* ── Checklist ── */
+.checklist-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.checklist-card{padding:14px;border-radius:12px;background:rgba(13,27,42,.7);border:1px solid var(--border)}
+.checklist-card.warn{border-color:rgba(255,87,34,.35);background:rgba(191,54,12,.06)}
+.checklist-head{font-size:12px;font-weight:800;color:var(--text-bright);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(26,58,92,.4)}
+.checklist-items{list-style:none;padding:0;display:flex;flex-direction:column;gap:6px}
+.checklist-items li{font-size:11px;color:var(--text);padding-left:16px;position:relative;line-height:1.5}
+.checklist-items li::before{content:'□';position:absolute;left:0;color:var(--muted);font-size:10px}
+
+/* ── Design Decision Cards ── */
+.pending-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.pending-card{border-color:rgba(255,87,34,.3) !important;background:rgba(191,54,12,.04) !important;position:relative}
+.pending-badge{
+  display:inline-block;padding:2px 8px;border-radius:999px;font-size:9px;font-weight:800;
+  background:rgba(255,87,34,.2);border:1px solid rgba(255,87,34,.5);color:#ff8a65;margin-bottom:8px;
+}
+.confirmed-badge{
+  display:inline-block;padding:2px 8px;border-radius:999px;font-size:9px;font-weight:800;
+  background:rgba(21,101,192,.2);border:1px solid rgba(21,101,192,.5);color:#64b5f6;margin-bottom:8px;
+}
+.org-confirmed-badge{
+  display:inline-block;padding:2px 8px;border-radius:999px;font-size:9px;font-weight:800;
+  background:rgba(46,125,82,.2);border:1px solid rgba(46,125,82,.5);color:#81c784;margin-bottom:8px;
+}
+.decision-counter{
+  margin-top:8px;font-size:10px;color:#ff8a65;padding:6px 8px;
+  background:rgba(191,54,12,.08);border-radius:6px;border-left:2px solid rgba(255,87,34,.4);line-height:1.5;
+}
+.decision-counter.green{color:#81c784;background:rgba(46,125,82,.06);border-left-color:rgba(46,125,82,.4)}
+.decision-counter.yellow{color:#ffe082;background:rgba(255,193,7,.05);border-left-color:rgba(255,193,7,.4)}
+.decision-premise{margin-top:6px;font-size:10px;color:var(--muted);font-style:italic}
+.decision-deadline{margin-top:6px;font-size:10px;color:var(--muted)}
+.decision-deadline span{color:#ff8a65;font-weight:700}
+.decision-tradeoff{
+  margin-top:8px;font-size:10px;color:var(--muted);padding:6px 8px;
+  background:rgba(0,0,0,.2);border-radius:6px;line-height:1.5;
+}
+
+/* ── Shared Components ── */
+.arch-frame{
+  background:#070e1a;border:1px solid rgba(26,58,92,.7);border-radius:16px;padding:16px;
+  box-shadow:0 8px 40px rgba(0,0,0,.5);
+}
+.arch-wrap{display:flex;gap:16px;align-items:flex-start}
+.arch-main{flex:1;min-width:0}
+.detail-panel{
+  width:300px; flex-shrink:0; position:sticky; top:92px;
+  max-height:calc(100vh - 110px); overflow:auto;
+  background:#09111f; border:1px solid var(--border); border-radius:14px; padding:18px;
+}
+.detail-empty{font-size:13px;color:var(--muted);text-align:center;padding:48px 0}
+.detail-title{font-size:16px;font-weight:800;margin-bottom:10px}
+.detail-row{margin-bottom:12px}
+.detail-label{font-size:10px;font-weight:800;color:var(--accent);margin-bottom:4px;letter-spacing:.4px}
+.detail-value{font-size:12px;white-space:pre-line}
+.zone{
+  position:relative; border-radius:14px; padding:18px 12px 12px; margin-bottom:10px;
+  border:1.5px solid var(--border); background:#0a111a;
+}
+.zone-label{
+  position:absolute; top:-10px; left:12px; padding:2px 10px; border-radius:4px;
+  background:var(--bg); font-size:10px; letter-spacing:1.2px; font-weight:800;
+}
+.zone-user{border-color:rgba(10,61,98,.8); background:rgba(10,61,98,.07)}
+.zone-user .zone-label{color:#4fc3f7}
+.zone-agent{border-color:rgba(106,27,154,.9); background:
+  repeating-linear-gradient(-55deg, rgba(106,27,154,.07), rgba(106,27,154,.07) 1px, transparent 1px, transparent 14px), #06040f}
+.zone-agent .zone-label{color:#ce93d8}
+.zone-scz{border-color:rgba(21,101,192,.9); background:
+  radial-gradient(circle, rgba(21,101,192,.11) 1px, transparent 1px) 0 0/20px 20px, #07101a}
+.zone-scz .zone-label{color:#64b5f6}
+.zone-recipe{border-style:dashed; border-color:rgba(142,36,170,.75); background:rgba(142,36,170,.06)}
+.zone-recipe .zone-label{color:#ce93d8}
+.zone-data{border-style:dashed; border-color:rgba(21,101,192,.55); background:rgba(21,101,192,.07)}
+.zone-data .zone-label{color:#64b5f6}
+.zone-system{border-style:dashed; border-color:rgba(46,125,82,.6); background:rgba(27,67,50,.08)}
+.zone-system .zone-label{color:#81c784}
+.zone-suz{border-color:rgba(46,125,82,.9); background:
+  repeating-linear-gradient(0deg, transparent, transparent 13px, rgba(46,125,82,.08) 13px, rgba(46,125,82,.08) 14px), #040d07}
+.zone-suz .zone-label{color:#81c784}
+.pii-box{
+  border:2px solid rgba(255,87,34,.7); border-radius:12px; padding:12px;
+  background:rgba(191,54,12,.12); cursor:pointer; transition:.18s ease;
+}
+.pii-box:hover,.pii-box.active{box-shadow:0 0 24px rgba(255,87,34,.22)}
+.nodes-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.node{
+  min-width:88px; text-align:center; cursor:pointer;
+  background:var(--panel); border:1.5px solid var(--border); border-radius:10px;
+  padding:8px 10px; transition:.15s ease; color:var(--text);
+}
+.node:hover,.node.active{border-color:var(--accent); box-shadow:0 0 14px rgba(0,212,255,.18)}
+.node-icon{font-size:17px}
+.node-label{font-size:10px;font-weight:700;line-height:1.35;margin-top:4px;white-space:pre-line}
+.mcp-strip{
+  position:relative; height:68px; margin:4px 0 8px; border-radius:10px;
+  border:1px solid rgba(106,27,154,.35);
+  background:linear-gradient(180deg,#06040f 0%,#0a061a 50%,#06040f 100%);
+  overflow:hidden;
+}
+.mcp-strip-line{
+  position:absolute; left:50%; top:0; bottom:0; width:2px;
+  background:repeating-linear-gradient(180deg,rgba(224,64,251,.65) 0 6px, transparent 6px 12px);
+}
+.mcp-strip-dot{
+  position:absolute; left:calc(50% - 4px); width:8px;height:8px;border-radius:50%;
+  background:radial-gradient(circle,#e040fb,#9c27b0);
+  box-shadow:0 0 12px rgba(156,39,176,.7); animation:mcpFall 2s linear infinite;
+}
+@keyframes mcpFall{
+  0%{top:-8px;opacity:0} 10%{opacity:1} 90%{opacity:1} 100%{top:calc(100% + 8px);opacity:0}
+}
+@keyframes wfPulse{
+  0%,100%{box-shadow:0 0 6px rgba(76,175,80,.4)} 50%{box-shadow:0 0 14px rgba(76,175,80,.8)}
+}
+@keyframes wfDot{
+  0%,80%,100%{transform:scale(0);opacity:.3} 40%{transform:scale(1.3);opacity:1}
+}
+.mcp-env{position:absolute; top:50%; transform:translateY(-50%); font-size:9px; font-weight:800; letter-spacing:1px}
+.mcp-badge{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  padding:6px 16px; border-radius:999px; font-size:10px; font-weight:800; letter-spacing:.8px;
+  border:1px solid rgba(156,39,176,.45); color:#e1bee7;
+  background:linear-gradient(135deg,#1a0a2e,#0f0720);
+}
+.vconn{display:flex;flex-direction:column;align-items:center;gap:0;margin:2px 0}
+.vconn-label{font-size:9px;color:var(--muted)}
+.vconn-arrow{font-size:15px;color:var(--accent)}
+.small{font-size:9px;color:var(--muted)}
+.badge{display:inline-block;padding:2px 7px;border-radius:999px;font-size:10px;font-weight:800;margin-right:6px;margin-bottom:4px}
+.badge-recipe{background:rgba(106,27,154,.18);border:1px solid rgba(106,27,154,.55);color:#ce93d8}
+.badge-skill{background:rgba(57,73,171,.16);border:1px solid rgba(57,73,171,.55);color:#9fa8da}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px}
+.doc-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.stack-zones{display:flex;flex-direction:column;gap:9px;flex:1.05}
+.compact-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:8px}
+.compact-node{display:flex;align-items:center;gap:7px;padding:6px 8px;border:1px solid rgba(26,58,92,.45);border-radius:8px;background:rgba(13,27,42,.45);cursor:pointer;transition:all .15s;min-width:0}
+.compact-node:hover{border-color:var(--accent);background:rgba(13,27,42,.72)}
+.compact-node .node-icon{font-size:14px;line-height:1;flex:0 0 auto}
+.compact-node .node-label{font-size:9.5px;line-height:1.3;text-align:left;word-break:keep-all;color:var(--text);min-width:0}
+.section-title{
+  margin:24px 0 14px; padding-left:12px; border-left:3px solid var(--accent);
+  color:var(--text-bright); font-size:16px; font-weight:800;
+}
+.flow-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
+.flow-step{padding:6px 10px;border-radius:8px;font-size:11px;font-weight:800;white-space:nowrap}
+.flow-arrow{color:var(--accent)}
+.table-wrap{overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:10px 12px;border-bottom:1px solid rgba(26,58,92,.45);text-align:left}
+th{color:var(--accent);background:#0d1b2a}
+.legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)}
+.legend-dot{width:8px;height:8px;border-radius:3px}
+.wf-r,.wf-skill-item{
+  padding:6px 11px;border-radius:7px;font-size:10px;font-weight:700;
+  border:1px solid rgba(255,255,255,.15);transition:.3s ease;white-space:nowrap;
+}
+.wf-r{color:#9c27b0;border-color:rgba(106,27,154,.35)}
+.wf-r.active{background:rgba(106,27,154,.2);color:#e1bee7;border-color:#9c27b0;box-shadow:0 0 12px rgba(106,27,154,.35)}
+.wf-skill-item{color:#7986cb;border-color:rgba(57,73,171,.35)}
+.wf-skill-item.lit{background:rgba(57,73,171,.22);color:#c5cae9;border-color:#5c6bc0;box-shadow:0 0 10px rgba(57,73,171,.35)}
+.wf-skill-sep{font-size:13px;color:rgba(92,107,192,.35);transition:.3s ease}
+.wf-skill-sep.lit{color:#9fa8da}
+.wf-tag-item{
+  display:inline-block;background:#0d1b2a;border:1px solid rgba(255,87,34,.28);border-radius:4px;
+  padding:3px 7px;font-size:9px;color:var(--muted);opacity:.25;transition:.3s ease
+}
+.wf-tag-item.show{opacity:1}
+.wf-tag-item span{color:var(--warn);font-weight:800;margin-left:2px}
+.scz-fetch{border-color:#ab47bc !important;box-shadow:0 0 18px rgba(106,27,154,.45)!important;background:rgba(106,27,154,.12)!important}
+.scz-skill-lit{border-color:#5c6bc0 !important;box-shadow:0 0 12px rgba(57,73,171,.45)!important;background:rgba(57,73,171,.12)!important}
+.callout{
+  margin-top:12px;padding:12px 14px;border-radius:10px;border-left:3px solid var(--accent);
+  background:rgba(13,27,62,.55);font-size:12px;
+}
+ul.clean{padding-left:18px}
+ul.clean li{margin:6px 0}
+.kicker{display:inline-block;padding:4px 10px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.4px;background:rgba(255,193,7,.12);border:1px solid rgba(255,193,7,.45);color:#ffe082;margin-bottom:10px}
+.hero-grid{display:grid;grid-template-columns:1fr;gap:16px}
+.hero-title{font-size:22px;font-weight:900;color:var(--text-bright);margin-bottom:8px}
+.hero-sub{font-size:13px;line-height:1.8;color:var(--text)}
+.visual-note{font-size:11px;color:var(--muted);margin-top:8px}
+.rail{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:stretch;margin-top:12px}
+.rail-card{flex:1;min-width:150px;padding:12px;border-radius:12px;border:1px solid var(--border);background:rgba(13,27,42,.7)}
+.rail-num{font-size:11px;font-weight:900;color:var(--accent);margin-bottom:6px}
+.rail-title{font-size:13px;font-weight:800;color:var(--text-bright);margin-bottom:4px}
+.rail-desc{font-size:11px;line-height:1.6;color:var(--text)}
+.dual-panels{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.big-type{font-size:17px;font-weight:900;margin-bottom:10px}
+.example-badge{display:inline-block;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:800;margin-bottom:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:#ffd54f}
+.flow-lane{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.flow-pill{padding:8px 10px;border-radius:10px;font-size:11px;font-weight:800;border:1px solid rgba(255,255,255,.18);background:rgba(13,27,42,.72)}
+.flow-pill.recipe{border-color:rgba(106,27,154,.45);color:#ce93d8;background:rgba(106,27,154,.12)}
+.flow-pill.skill{border-color:rgba(57,73,171,.45);color:#c5cae9;background:rgba(57,73,171,.14)}
+.flow-pill.decision{border-color:rgba(46,125,82,.5);color:#a5d6a7;background:rgba(46,125,82,.12)}
+.flow-connector{color:var(--accent);font-weight:900}
+.recipe-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.recipe-card{border:1px solid rgba(106,27,154,.35);background:linear-gradient(180deg,rgba(106,27,154,.08),rgba(13,27,42,.75));border-radius:14px;padding:14px}
+.recipe-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.recipe-name{font-size:14px;font-weight:900;color:#f1d8ff}
+.status-chip{padding:3px 8px;border-radius:999px;font-size:10px;font-weight:800;border:1px solid rgba(255,193,7,.35);color:#ffe082;background:rgba(255,193,7,.06)}
+.mini-list{display:grid;gap:6px;margin:10px 0}
+.mini-item{display:flex;align-items:flex-start;gap:7px;font-size:11px;line-height:1.55}
+.mini-item b{color:var(--text-bright)}
+.skill-catalog{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.skill-card{border:1px solid rgba(57,73,171,.35);background:linear-gradient(180deg,rgba(57,73,171,.08),rgba(13,27,42,.75));border-radius:14px;padding:14px}
+.skill-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:900;color:#dce4ff;margin-bottom:10px}
+.meta-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.meta-box{padding:8px 10px;border-radius:10px;border:1px solid rgba(26,58,92,.5);background:rgba(8,18,30,.55)}
+.meta-k{font-size:9px;font-weight:900;color:var(--accent);margin-bottom:4px;letter-spacing:.5px}
+.meta-v{font-size:10px;line-height:1.45;color:var(--text)}
+.update-loop{display:flex;gap:10px;align-items:stretch;flex-wrap:nowrap;overflow:auto;padding-bottom:2px}
+.update-loop .loop-step{flex:1;min-width:0}
+.update-loop .loop-arrow{flex:0 0 auto;align-self:center}
+.loop-step{padding:12px;border-radius:12px;border:1px solid rgba(46,125,82,.35);background:rgba(46,125,82,.08)}
+.loop-step strong{display:block;font-size:12px;color:var(--text-bright);margin-bottom:6px}
+.loop-step span{font-size:11px;line-height:1.55;color:var(--text)}
+.loop-arrow{display:flex;align-items:center;justify-content:center;color:#81c784;font-weight:900;font-size:18px}
+.outcome-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.outcome-card{padding:14px;border-radius:14px;border:1px solid rgba(255,255,255,.13);background:rgba(13,27,42,.72)}
+.outcome-card h4{font-size:13px;color:var(--text-bright);margin-bottom:8px}
+.outcome-card p{font-size:11px;line-height:1.7}
+
+@media (max-width: 980px){
+  .rail,.dual-panels,.recipe-cards,.skill-catalog,.outcome-grid,.checklist-grid,.pending-grid,.doc-grid{grid-template-columns:1fr}
+  .update-loop{flex-wrap:wrap}
+  .update-loop .loop-step{min-width:220px}
+  .loop-arrow{transform:rotate(90deg)}
+  .arch-wrap{flex-direction:column}
+  .detail-panel{position:static;width:100%;max-height:none}
+  .swimlane-header,.sl-row{grid-template-columns:1fr}
+  .sl-cell{border-right:none;border-bottom:1px solid rgba(26,58,92,.25)}
+  .access-scope-grid{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion: reduce){
+  .mcp-strip-dot,#wf-status-dot,.wf-dot{animation:none !important}
+  .node,.wf-r,.wf-skill-item,.wf-tag-item,.nav-tab{transition:none !important}
+}
+
+/* ── 범주화 엔진 페이지 ── */
+#tab-categ .categ-header{text-align:center;margin-bottom:40px}
+#tab-categ .categ-header h2{font-size:22px;font-weight:800;color:var(--text-bright);letter-spacing:-.3px;margin-bottom:8px}
+#tab-categ .categ-header p{font-size:13px;color:var(--muted)}
+#tab-categ .categ-main{max-width:960px;margin:0 auto}
+
+/* 비율 바 */
+#tab-categ .ratio-bar-wrap{margin-bottom:32px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px 20px}
+#tab-categ .ratio-label{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.8px;margin-bottom:10px}
+#tab-categ .ratio-bar{display:flex;height:32px;border-radius:8px;overflow:hidden;gap:2px}
+#tab-categ .ratio-seg{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;transition:filter .2s;cursor:default}
+#tab-categ .ratio-seg:hover{filter:brightness(1.2)}
+#tab-categ .ratio-legends{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap}
+#tab-categ .ratio-legend{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+#tab-categ .ratio-dot{width:10px;height:10px;border-radius:3px}
+
+/* 파이프라인 */
+#tab-categ .categ-pipeline{display:flex;align-items:stretch;gap:0;margin-bottom:28px;position:relative}
+#tab-categ .categ-stage{flex:1;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px 14px 16px;position:relative;cursor:pointer;transition:all .2s;min-width:0}
+#tab-categ .categ-stage:hover{border-color:var(--stage-color);box-shadow:0 0 0 1px var(--stage-color),0 0 20px color-mix(in srgb,var(--stage-color) 20%,transparent)}
+#tab-categ .categ-stage.active{border-color:var(--stage-color);background:color-mix(in srgb,var(--stage-color) 8%,var(--panel));box-shadow:0 0 0 1px var(--stage-color),0 0 24px color-mix(in srgb,var(--stage-color) 25%,transparent)}
+#tab-categ .categ-stage-num{position:absolute;top:-10px;left:14px;background:var(--stage-color);color:#fff;font-size:9px;font-weight:800;padding:1px 8px;border-radius:10px;letter-spacing:.5px}
+#tab-categ .categ-stage-icon{font-size:22px;margin-bottom:8px}
+#tab-categ .categ-stage-title{font-size:12px;font-weight:800;color:var(--text-bright);margin-bottom:4px;line-height:1.3}
+#tab-categ .categ-stage-sub{font-size:10px;color:var(--muted);line-height:1.5}
+#tab-categ .categ-stage-badge{display:inline-block;margin-top:8px;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:800;background:color-mix(in srgb,var(--stage-color) 20%,transparent);color:var(--stage-color);border:1px solid color-mix(in srgb,var(--stage-color) 40%,transparent)}
+#tab-categ .categ-arrow{display:flex;align-items:center;padding:0 4px;flex-shrink:0}
+#tab-categ .categ-arrow svg{color:var(--border)}
+
+/* 상세 패널 */
+#tab-categ .categ-detail{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:28px;display:none;animation:categFadeIn .2s ease}
+#tab-categ .categ-detail.show{display:block}
+@keyframes categFadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+#tab-categ .categ-detail-header{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+#tab-categ .categ-detail-title{font-size:14px;font-weight:800;color:var(--text-bright)}
+#tab-categ .categ-detail-tag{padding:2px 9px;border-radius:4px;font-size:10px;font-weight:800}
+#tab-categ .categ-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+#tab-categ .categ-detail-card{background:rgba(8,18,30,.85);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+#tab-categ .categ-detail-card-title{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.6px;margin-bottom:8px}
+
+/* 코드 블록 */
+#tab-categ .categ-code{background:#04070e;border:1px solid #1a2540;border-radius:6px;padding:10px 12px;font-family:'SF Mono','Fira Code',monospace;font-size:11px;line-height:1.7;color:#94a3b8;white-space:pre;overflow-x:auto}
+#tab-categ .categ-code .k{color:#60a5fa}
+#tab-categ .categ-code .v{color:#34d399}
+#tab-categ .categ-code .c{color:#475569}
+#tab-categ .categ-code .s{color:#f59e0b}
+#tab-categ .categ-code .p{color:#a78bfa}
+#tab-categ .categ-code .r{color:#f87171}
+
+/* 처리 흐름 칩 */
+#tab-categ .categ-flow-row{display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:7px;flex-wrap:wrap}
+#tab-categ .categ-flow-chip{padding:3px 10px;border-radius:5px;font-size:10px;font-weight:700;white-space:nowrap}
+#tab-categ .categ-flow-arrow{color:var(--border);font-size:13px}
+#tab-categ .categ-flow-note{color:var(--muted);font-size:10px}
+
+/* AWS 테이블 */
+#tab-categ .categ-aws-table{width:100%;border-collapse:collapse;font-size:12px}
+#tab-categ .categ-aws-table th{background:#04070e;color:var(--accent);font-weight:700;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:10px;letter-spacing:.5px}
+#tab-categ .categ-aws-table td{padding:8px 12px;border-bottom:1px solid #111827;color:var(--text)}
+#tab-categ .categ-aws-table tr:last-child td{border-bottom:none}
+#tab-categ .categ-aws-table tr:hover td{background:#0d1425}
+
+/* 요약 박스 */
+#tab-categ .categ-summary{background:linear-gradient(135deg,#0c1a2e,#0f1e38);border:1px solid #1e3a5f;border-radius:12px;padding:20px 22px;display:flex;align-items:flex-start;gap:16px}
+#tab-categ .categ-summary-icon{font-size:28px;flex-shrink:0}
+#tab-categ .categ-summary-title{font-size:14px;font-weight:800;color:var(--text-bright);margin-bottom:8px}
+#tab-categ .categ-summary-flow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+#tab-categ .sf-box{padding:4px 12px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap}
+#tab-categ .sf-arrow{color:var(--muted);font-size:14px}
+
+@media (max-width:700px){
+  #tab-categ .categ-pipeline{flex-direction:column}
+  #tab-categ .categ-arrow{transform:rotate(90deg);align-self:center}
+  #tab-categ .categ-detail-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="top-header">
+  <div>
+    <h1>Agent 하네스 아키텍처</h1>
+    <div class="meta">AI Board × AX Tech WG · 2026 · v1.0</div>
+  </div>
+  <div class="nav-tabs">
+    <div class="nav-tab active" data-tab="arch">아키텍처</div>
+    <div class="nav-tab" data-tab="flow">데이터 흐름</div>
+    <div class="nav-tab" data-tab="recipe">레시피·스킬</div>
+    <div class="nav-tab" data-tab="categ">범주화 엔진</div>
+  </div>
+</div>
+
+<div class="content">
+
+<!-- ═══════════════════════════════════════════════════
+     1. 아키텍처 페이지
+════════════════════════════════════════════════════════ -->
+<section id="tab-arch" class="section active">
+
+  <!-- ① 핵심 메시지 박스 (배너 대체) -->
+  <div class="core-message-box">
+    <div class="core-msg-lines">
+      <div class="core-msg-line">SCZ가 원본 데이터와 시스템 접근을 통제한다.</div>
+      <div class="core-msg-line">Agent는 레시피 기반으로 플래닝하고, 판단과 응답을 결정한다. <span class="dim">— 직접 시스템을 호출하지 않는다.</span></div>
+      <div class="core-msg-line">SUZ는 SCZ와 Agent 양쪽을 관제하고 개선 루프를 닫는다.</div>
+    </div>
+    <div class="org-badge-strip">
+      <span class="org-badge org-agent">🟣 타 조직 담당: Agent 환경 · 빌더 플랫폼</span>
+      <span class="org-badge org-scz">🔵 Ax Tech WG: SCZ 전체</span>
+      <span class="org-badge org-suz">🟢 Ax Tech WG: SUZ</span>
+    </div>
+  </div>
+
+  <div class="arch-frame">
+    <div class="arch-wrap">
+      <div class="arch-main">
+
+        <!-- Agent 존 -->
+        <div class="zone zone-agent" style="padding:24px 18px 18px;margin-bottom:14px">
+          <div class="zone-label">Agent 환경 — 타 조직 담당 (Builder · Agent/LLM)</div>
+          <div style="display:flex;gap:18px;align-items:stretch">
+            <div style="display:flex;flex-direction:column;gap:12px;flex-shrink:0;min-width:140px">
+              <div class="node" data-node="builder" style="padding:12px 14px">
+                <div class="node-icon" style="font-size:20px">🏗️</div>
+                <div class="node-label" style="font-size:11px">빌더 플랫폼</div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center">
+                <div class="node" data-node="agent_llm" style="padding:14px;border-color:rgba(0,212,255,.6);box-shadow:0 0 18px rgba(0,212,255,.12);width:100%">
+                  <div class="node-icon" style="font-size:22px">🤖</div>
+                  <div class="node-label" style="font-size:11px">Agent / LLM</div>
+                </div>
+                <!-- ② 직접 접근 없음 배지 -->
+                <div class="no-direct-access-badge" style="width:100%">
+                  ⚠️ 직접 시스템 접근 없음<br>모든 실행은 SCZ 스킬에 위임
+                </div>
+              </div>
+            </div>
+            <div style="flex:1;background:#09071a;border:1px solid rgba(106,27,154,.45);border-radius:14px;padding:18px;min-height:220px">
+              <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px">
+                <div id="wf-status-dot" style="width:8px;height:8px;border-radius:50%;background:#4caf50;box-shadow:0 0 8px rgba(76,175,80,.6);animation:wfPulse 2s ease-in-out infinite"></div>
+                <span style="font-size:12px;font-weight:800;color:#ce93d8">동적 워크플로우 오케스트레이션</span>
+                <span class="small" style="margin-left:auto">MCP → SCZ Harness</span>
+              </div>
+              <div style="margin-bottom:10px">
+                <div class="small" style="margin-bottom:7px;font-size:10px">① 레시피 조회 · 선택</div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap" id="wf-recipes">
+                  <div class="wf-r">🏥 의료비 신청</div>
+                  <div class="wf-r">💐 경조사 신청</div>
+                  <div class="wf-r">🧾 전표 검증</div>
+                </div>
+              </div>
+              <div class="small" style="margin-bottom:7px;font-size:10px">② 플래닝 → 스킬 순차 실행</div>
+              <div id="wf-skill-chain" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;min-height:40px"></div>
+              <div style="display:flex;gap:4px;margin:8px 0 6px;align-items:center">
+                <div class="wf-dot" style="width:5px;height:5px;border-radius:50%;background:#9c27b0;animation:wfDot 1.4s ease-in-out infinite"></div>
+                <div class="wf-dot" style="width:5px;height:5px;border-radius:50%;background:#9c27b0;animation:wfDot 1.4s ease-in-out .25s infinite"></div>
+                <div class="wf-dot" style="width:5px;height:5px;border-radius:50%;background:#9c27b0;animation:wfDot 1.4s ease-in-out .5s infinite"></div>
+                <span class="small" style="margin-left:2px">SCZ 하네스 스킬 실행 중</span>
+              </div>
+              <div style="padding:10px 12px;background:rgba(191,54,12,.07);border:1px solid rgba(191,54,12,.22);border-radius:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+                <span class="small" style="color:#ff7043">③ PII 범주화 결과 수신 (원본 없음)</span>
+                <div id="wf-tags" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+              </div>
+              <div class="card" data-node="agent_decision" style="padding:12px 14px;background:rgba(106,27,154,.15);border:2px solid rgba(206,147,216,.5)">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                  <span style="font-size:16px">🧩</span>
+                  <span style="font-size:11px;font-weight:800;color:var(--text-bright)">④ 판단 · 응답 결정</span>
+                  <span style="margin-left:auto;font-size:9px;color:#ce93d8;font-weight:700">Agent 핵심 역할</span>
+                </div>
+                <div class="small">범주화 결과 + 정책 결과 + 검증 결과를 종합해 사용자 안내, 추가서류 요청, 승인 요청, 최종 결과 설명 등 다음 액션을 결정</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MCP 스트립 -->
+        <div class="mcp-strip">
+          <div class="mcp-strip-line"></div>
+          <div class="mcp-strip-dot" style="animation-delay:0s"></div>
+          <div class="mcp-strip-dot" style="animation-delay:.33s"></div>
+          <div class="mcp-strip-dot" style="animation-delay:.66s"></div>
+          <div class="mcp-strip-dot" style="animation-delay:1s"></div>
+          <div class="mcp-strip-dot" style="animation-delay:1.33s"></div>
+          <div class="mcp-env" style="left:10px;color:#ab47bc">AGENT ENV</div>
+          <div class="mcp-badge">MCP · 레시피/스킬 조회 및 실행 요청</div>
+          <div class="mcp-env" style="right:10px;color:#64b5f6">HARNESS ENV</div>
+        </div>
+
+        <div style="display:flex;gap:10px;align-items:stretch">
+          <!-- USER 존 (확장) -->
+          <div style="width:130px;flex-shrink:0">
+            <div class="zone zone-user" style="height:100%;display:flex;flex-direction:column;align-items:center;gap:10px;padding:22px 8px 12px">
+              <div class="zone-label">USER</div>
+              <div class="node" data-node="user_ui" style="width:108px"><div class="node-icon">🖥️</div><div class="node-label">사용자 UI</div></div>
+              <div style="color:var(--muted);font-size:16px">↕</div>
+              <div class="node" data-node="admin_ui" style="width:108px"><div class="node-icon">⚙️</div><div class="node-label">관리자 UI</div></div>
+              <div style="font-size:9px;color:var(--muted);text-align:center;margin-top:4px;line-height:1.5">요청 진입 / 결과 확인</div>
+            </div>
+          </div>
+
+          <!-- SCZ 존 -->
+          <div style="flex:1;min-width:0">
+            <div class="zone zone-scz">
+              <div class="zone-label">SECURE CONNECT ZONE (SCZ) — Ax Tech WG 담당 · 원본 데이터 처리</div>
+
+              <div class="nodes-row" style="margin-bottom:8px">
+                <div class="node" data-node="gateway"><div class="node-icon">🔀</div><div class="node-label">API Gateway</div></div>
+                <div class="node" data-node="policy"><div class="node-icon">🧭</div><div class="node-label">Policy Engine</div></div>
+                <div class="node" data-node="approval"><div class="node-icon">✋</div><div class="node-label">Approval Gate</div></div>
+              </div>
+
+              <div class="vconn"><div class="vconn-label">요청 전달</div><div class="vconn-arrow">↕</div></div>
+
+              <div class="zone zone-recipe">
+                <div class="zone-label">RECIPE · SKILL LAYER</div>
+                <div style="margin-bottom:10px">
+                  <span class="badge badge-recipe">RECIPE</span><span class="small">업무 시나리오 워크플로우</span>
+                  <div class="nodes-row" style="margin-top:8px">
+                    <div class="node" id="n-r-medical" data-node="r_medical"><div class="node-icon">🏥</div><div class="node-label">의료비 신청
+레시피</div></div>
+                    <div class="node" id="n-r-condolence" data-node="r_condolence"><div class="node-icon">💐</div><div class="node-label">경조사 신청
+레시피</div></div>
+                    <div class="node" id="n-r-voucher" data-node="r_voucher"><div class="node-icon">🧾</div><div class="node-label">전표 처리
+레시피</div></div>
+                    <div class="node" data-node="r_new"><div class="node-icon">＋</div><div class="node-label">신규 레시피</div></div>
+                  </div>
+                </div>
+                <div class="small" style="font-weight:700;margin-bottom:7px;color:#ce93d8">각 레시피가 필요한 스킬 호출 ↓</div>
+                <div>
+                  <span class="badge badge-skill">SKILL</span><span class="small">재사용 원자 액션</span>
+                  <div class="nodes-row" style="margin-top:8px">
+                    <div class="node" id="n-s-ocr" data-node="s_ocr"><div class="node-icon">🔡</div><div class="node-label">OCR 스킬</div></div>
+                    <div class="node" id="n-s-erp-r" data-node="s_erp_r"><div class="node-icon">📋</div><div class="node-label">ERP 조회</div></div>
+                    <div class="node" id="n-s-erp-w" data-node="s_erp_w"><div class="node-icon">✏️</div><div class="node-label">ERP 반영</div></div>
+                    <div class="node" id="n-s-rag" data-node="s_rag"><div class="node-icon">📚</div><div class="node-label">RAG 검색</div></div>
+                    <div class="node" id="n-s-hw" data-node="s_hw"><div class="node-icon">🏢</div><div class="node-label">그룹웨어 API</div></div>
+                    <div class="node" id="n-s-validate" data-node="s_validate"><div class="node-icon">✅</div><div class="node-label">검증·이상탐지</div></div>
+                    <div class="node" id="n-s-format" data-node="s_format"><div class="node-icon">🎨</div><div class="node-label">포맷·리포트</div></div>
+                    <div class="node" data-node="s_new"><div class="node-icon">＋</div><div class="node-label">신규 스킬</div></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="stack-zones" style="margin-bottom:10px">
+                <div class="zone zone-data" style="margin-bottom:0">
+                  <div class="zone-label">DATA · KNOWLEDGE</div>
+                  <div class="compact-list">
+                    <div class="compact-node" data-node="context_mgr"><div class="node-icon">🧠</div><div class="node-label">Context 관리 — 세션/요약/장기 컨텍스트</div></div>
+                    <div class="compact-node" data-node="rag_store"><div class="node-icon">📖</div><div class="node-label">RAG Store — 규정·문서 인덱스</div></div>
+                    <div class="compact-node" data-node="db"><div class="node-icon">🗄️</div><div class="node-label">DB — 업무 데이터·상태 저장</div></div>
+                    <div class="compact-node" data-node="audit"><div class="node-icon">🧾</div><div class="node-label">Audit Log — 실행·정책·승인 이력</div></div>
+                  </div>
+                </div>
+                <div class="zone zone-system" style="margin-bottom:0">
+                  <div class="zone-label">SYSTEM CONNECTORS</div>
+                  <div class="compact-list">
+                    <div class="compact-node" data-node="erp"><div class="node-icon">🏭</div><div class="node-label">사내 ERP — 조회/반영 대상 시스템</div></div>
+                    <div class="compact-node" data-node="groupware"><div class="node-icon">📬</div><div class="node-label">그룹웨어 — 결재·알림 연동</div></div>
+                    <div class="compact-node" data-node="ext_api"><div class="node-icon">☁️</div><div class="node-label">외부 API — 공공·OCR·파트너 연계</div></div>
+                    <div class="compact-node" data-node="secrets"><div class="node-icon">🔐</div><div class="node-label">Secrets Broker — 단기 자격증명 발급</div></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="vconn"><div class="vconn-label">레시피·스킬 처리 완료</div><div class="vconn-arrow">↕</div></div>
+
+              <!-- ③ PII 박스 — 레이블 강화 -->
+              <div class="pii-box" data-node="pii">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+                  <span style="font-size:16px">🛡️</span>
+                  <span style="font-size:11px;font-weight:800;color:var(--text-bright)">PII 탐지 · 민감정보 범주화</span>
+                  <span class="badge" style="background:rgba(191,54,12,.24);border:1px solid rgba(191,54,12,.65);color:#ff8a65">sLM</span>
+                  <span style="margin-left:auto;font-size:9px;color:#ff7043;font-weight:700;text-align:right;line-height:1.5">
+                    SCZ 반출 직전 마지막 통제<br>
+                    <span style="font-weight:400;color:var(--muted)">이후 Agent는 원본 데이터를 받지 않는다</span>
+                  </span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:8px;align-items:center">
+                  <div class="card" style="padding:10px"><div style="font-size:10px;font-weight:800;color:#64b5f6;margin-bottom:4px">입력</div><div class="small">레시피 처리 완료 결과 (원본 포함)</div></div>
+                  <div style="color:var(--accent)">→</div>
+                  <div class="card" style="padding:10px"><div style="font-size:10px;font-weight:800;color:#ff8a65;margin-bottom:4px">탐지</div><div class="small">룰기반 + 외부지식 + sLM 시맨틱<br>→ 마스킹 / 차단 / 감사로그</div></div>
+                  <div style="color:var(--accent)">→</div>
+                  <div class="card" style="padding:10px"><div style="font-size:10px;font-weight:800;color:#ff8a65;margin-bottom:4px">범주화</div><div class="small">민감정보는 범주 태그로 치환<br>일반정보는 원본 유지</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ⑤ SUZ 연결 - 양방향 명시 -->
+        <div class="suz-connect-strip">
+          <div class="suz-connect-item">
+            <span class="suz-con-label">SCZ → SUZ</span>
+            <span class="suz-con-desc">운영 지표 · 실행 로그 수집</span>
+          </div>
+          <div class="suz-connect-center">↕</div>
+          <div style="font-size:10px;color:var(--muted);text-align:center">SUZ 운영팀이<br>양쪽을 통합 관제</div>
+          <div class="suz-connect-center">↕</div>
+          <div class="suz-connect-item right">
+            <span class="suz-con-label">Agent 환경 → SUZ</span>
+            <span class="suz-con-desc">응답 품질 · 토큰 지표 수집</span>
+          </div>
+        </div>
+
+        <!-- SUZ 존 -->
+        <div class="zone zone-suz">
+          <div class="zone-label">SECURE UPDATE ZONE (SUZ) — AX Tech WG 담당 · 배포 · 모니터링 · 토큰 최적화 · Agent QA/EVAL</div>
+          <div style="display:flex;gap:10px;align-items:stretch">
+            <div class="nodes-row" style="flex-shrink:0">
+              <div class="node" data-node="suz_deploy"><div class="node-icon">🚀</div><div class="node-label">배포 파이프라인<br><span style="font-size:8px;color:var(--muted)">SCZ + Agent 양쪽</span></div></div>
+              <div class="node" data-node="suz_monitor"><div class="node-icon">📊</div><div class="node-label">모니터링·감사<br><span style="font-size:8px;color:var(--muted)">통합 관제</span></div></div>
+            </div>
+            <div style="width:1px;background:rgba(0,105,92,.35)"></div>
+            <div style="flex:1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+              <div class="card" style="background:rgba(0,105,92,.10);border-color:rgba(0,105,92,.5)" data-node="suz_token">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                  <span style="font-size:16px">⚡</span><span style="font-size:11px;font-weight:800;color:var(--text-bright)">토큰 최적화</span>
+                </div>
+                <div class="small">불필요 컨텍스트 탐지 → 압축 정책 업데이트<br>레시피별 토큰 추이 → 프롬프트 경량화 권고<br>범주화 태그 정밀도 → 정보량 vs 토큰 조정</div>
+              </div>
+              <div class="card" style="background:rgba(0,105,92,.10);border-color:rgba(0,105,92,.5)" data-node="suz_qaeval">
+                <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+                  <span style="font-size:16px">🧪</span><span style="font-size:11px;font-weight:800;color:var(--text-bright)">Agent QA / EVAL</span>
+                </div>
+                <div class="small">응답 신뢰성·일관성·컨텍스트 적절성 점검<br>레시피/스킬별 실패 패턴·품질 이슈 식별<br>운영 개선 포인트 도출 및 재현 테스트 관리</div>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="margin-top:10px;background:rgba(13,27,42,.55);border-color:rgba(0,105,92,.45)" data-node="suz_update_flow">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
+              <span style="font-size:16px">🔁</span><span style="font-size:11px;font-weight:800;color:var(--text-bright)">SUZ 결과물 반영 흐름</span>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <div class="flow-step" style="background:rgba(46,125,82,.18);border:1px solid rgba(46,125,82,.55);color:#81c784">토큰/QA·EVAL 결과 도출</div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step" style="background:rgba(33,150,243,.14);border:1px solid rgba(33,150,243,.45);color:#90caf9">운영 담당자 전달<br><span style="font-size:9px;color:var(--muted)">[Ax Tech WG 운영팀]</span></div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step" style="background:rgba(255,193,7,.14);border:1px solid rgba(255,193,7,.45);color:#ffe082">운영자 검토·OK<br><span style="font-size:9px;color:var(--muted)">[업무 부서 공동]</span></div>
+              <div class="flow-arrow">→</div>
+              <div class="flow-step" style="background:rgba(142,36,170,.14);border:1px solid rgba(142,36,170,.45);color:#ce93d8">레시피/스킬 업데이트 반영</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--agent)"></div>Agent 환경 (타 조직)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#ab47bc"></div>MCP 연결</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--scz)"></div>SCZ (Ax Tech WG)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--warn)"></div>PII 탐지·범주화</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--suz)"></div>SUZ (Ax Tech WG)</div>
+        </div>
+      </div>
+
+      <aside class="detail-panel" id="detail-panel">
+        <div class="detail-empty" id="detail-empty">노드를 클릭하면<br>상세 설명이 표시됩니다.</div>
+        <div id="detail-content" style="display:none">
+          <div id="d-icon" style="font-size:28px;margin-bottom:8px"></div>
+          <div class="detail-title" id="d-title"></div>
+          <hr style="border-color:rgba(26,58,92,.45);margin-bottom:12px">
+          <div id="d-rows"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════
+     2. 데이터 흐름 페이지
+════════════════════════════════════════════════════════ -->
+<section id="tab-flow" class="section">
+
+  <!-- ① 원칙 박스 — 최상단 -->
+  <div class="principle-box">
+    <div class="principle-row">
+      <span class="principle-badge scz">🔵 SCZ</span>
+      <span>사실(fact)을 처리한다 — 시스템 연동 · 데이터 검증 · PII 탐지·범주화 · 정책 집행</span>
+    </div>
+    <div class="principle-row">
+      <span class="principle-badge agent">🟣 Agent</span>
+      <span>해석(interpretation)을 한다 — 판단 보조 · 응답 결정 · 사용자 대화 맥락 처리</span>
+    </div>
+    <div class="principle-key">⚠️ Agent는 SCZ를 통해서만 시스템에 접근한다 — 직접 호출 없음</div>
+  </div>
+
+  <!-- ② 실행 주체 요약 — 상단으로 이동 -->
+  <div class="section-title">실행 주체별 역할</div>
+  <div class="doc-grid" style="margin-bottom:24px">
+    <div class="card">
+      <h3 style="color:#64b5f6;margin-bottom:10px">🔵 SCZ가 담당하는 것</h3>
+      <ul class="clean">
+        <li>입력 수신, 인증 이후 보안 경계 내 처리</li>
+        <li>OCR 선처리와 실제 스킬 런타임 수행</li>
+        <li>ERP/그룹웨어/외부 API/RAG/DB 접근</li>
+        <li>정책 확인, 승인 게이트, PII 탐지·범주화</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="color:#ce93d8;margin-bottom:10px">🟣 Agent가 담당하는 것</h3>
+      <ul class="clean">
+        <li>레시피 선택과 스킬 호출 순서 플래닝</li>
+        <li>분기 판단과 사용자 대화 맥락 해석</li>
+        <li>범주화·정책·검증 결과를 종합한 판단 보조</li>
+        <li>최종 응답과 다음 액션 결정 후 자연어로 설명</li>
+        <li style="color:#ff8a65;font-weight:700">직접 시스템을 호출하지 않고 SCZ를 통해 실행</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ③ 스윔레인 흐름도 -->
+  <div class="section-title">전체 데이터 흐름 — 주체별 스윔레인</div>
+  <div class="swimlane-wrap">
+    <div class="swimlane-header">
+      <div class="sl-col user">USER<span class="sl-org">요청 진입/결과 확인</span></div>
+      <div class="sl-col scz">SCZ<span class="sl-org">Ax Tech WG 담당</span></div>
+      <div class="sl-col agent">Agent 환경<span class="sl-org">타 조직 담당</span></div>
+      <div class="sl-col suz">SUZ<span class="sl-org">Ax Tech WG 담당</span></div>
+    </div>
+    <div class="swimlane-body">
+      <!-- 행 1: 요청 -->
+      <div class="sl-row">
+        <div class="sl-cell user active-cell">
+          <div class="sl-step">① 요청</div>
+          <div class="sl-desc">신청서·질의·증빙 파일 업로드</div>
+          <div class="sl-arrow right">──▶</div>
+        </div>
+        <div class="sl-cell scz active-cell">
+          <div class="sl-step">② 진입·인증</div>
+          <div class="sl-desc">API Gateway 인증·인가·라우팅</div>
+        </div>
+        <div class="sl-cell agent empty"></div>
+        <div class="sl-cell suz empty"></div>
+      </div>
+      <!-- 행 2: 선처리 → MCP → 레시피·플래닝 -->
+      <div class="sl-row">
+        <div class="sl-cell user empty"></div>
+        <div class="sl-cell scz active-cell">
+          <div class="sl-step">③ SCZ 선처리</div>
+          <div class="sl-desc">OCR 스킬로 원문 추출, 요청 컨텍스트 정리</div>
+          <div class="sl-arrow right transfer-mcp">── MCP ──▶</div>
+        </div>
+        <div class="sl-cell agent active-cell">
+          <div class="sl-step">④ 레시피 조회</div>
+          <div class="sl-desc">MCP로 적합한 레시피 선택</div>
+          <br>
+          <div class="sl-step">⑤ 플래닝</div>
+          <div class="sl-desc">스킬 호출 순서·분기 결정</div>
+          <div class="sl-arrow left transfer-mcp">◀── 스킬 실행 요청 ──</div>
+        </div>
+        <div class="sl-cell suz empty"></div>
+      </div>
+      <!-- 행 3: 스킬 실행 묶음 -->
+      <div class="sl-row sl-row-group">
+        <div class="sl-cell user empty"></div>
+        <div class="sl-cell scz active-cell group-cell">
+          <div class="sl-step">⑥ ~ ⑩ 스킬 실행 (SCZ 내부)</div>
+          <div class="sl-desc" style="margin-top:6px">
+            <span style="color:#9fa8da;font-weight:700">⑥</span> 스킬 실행 요청 처리<br>
+            <span style="color:#9fa8da;font-weight:700">⑦</span> 시스템 API 호출 (ERP·그룹웨어·외부)<br>
+            <span style="color:#9fa8da;font-weight:700">⑧</span> RAG/DB 작업 (규정검색·상태저장·로그)<br>
+            <span style="color:#ffd54f;font-weight:700">⑨</span> 정책/승인 확인 (고위험 write 시)<br>
+            <span style="color:#ff8a65;font-weight:700">⑩</span> PII 탐지·범주화 → 민감정보 마스킹
+          </div>
+          <div class="sl-arrow right transfer-pii" style="margin-top:8px">── 범주화 결과 전달 ──▶</div>
+          <div class="sl-transfer-label">원본 없음 · 태그만 전달</div>
+        </div>
+        <div class="sl-cell agent empty"></div>
+        <div class="sl-cell suz empty"></div>
+      </div>
+      <!-- 행 4: 결과 종합·판단 -->
+      <div class="sl-row">
+        <div class="sl-cell user empty"></div>
+        <div class="sl-cell scz empty"></div>
+        <div class="sl-cell agent active-cell">
+          <div class="sl-step">⑪ 결과 종합</div>
+          <div class="sl-desc">범주화·정책·검증 결과를 사용자 관점으로 정리</div>
+          <br>
+          <div class="sl-step">⑫ 판단·응답 결정</div>
+          <div class="sl-desc">추가서류 요청 / 승인 요청 / 처리 완료 안내 결정</div>
+          <br>
+          <div class="sl-step">⑬ 응답 생성</div>
+          <div class="sl-desc">결론을 자연어 메시지로 생성</div>
+          <div class="sl-arrow left transfer-mcp" style="margin-top:4px">◀── 최종 액션 실행 요청 ──</div>
+        </div>
+        <div class="sl-cell suz active-cell">
+          <div class="sl-step">데이터 수집</div>
+          <div class="sl-desc" style="color:var(--muted)">응답 품질·토큰·지연 지표 수집</div>
+        </div>
+      </div>
+      <!-- 행 5: SCZ 최종 액션 -->
+      <div class="sl-row">
+        <div class="sl-cell user empty"></div>
+        <div class="sl-cell scz active-cell">
+          <div class="sl-step">⑭ SCZ 최종 액션 실행</div>
+          <div class="sl-desc" style="margin-top:6px">
+            <span style="color:#81c784;font-weight:700">•</span> 사내시스템 결과 반영 (ERP·그룹웨어 상태 업데이트)<br>
+            <span style="color:#81c784;font-weight:700">•</span> 사내 메신저 알림 발송 (처리 완료·승인 요청 등)<br>
+            <span style="color:#81c784;font-weight:700">•</span> 후속 워크플로우 트리거 (결재선 기동·일정 등록 등)
+          </div>
+          <div class="sl-arrow left" style="color:#4fc3f7;margin-top:8px">◀──</div>
+        </div>
+        <div class="sl-cell agent empty"></div>
+        <div class="sl-cell suz empty"></div>
+      </div>
+      <!-- 행 6: 반환 -->
+      <div class="sl-row">
+        <div class="sl-cell user active-cell">
+          <div class="sl-step">⑮ 결과 반환</div>
+          <div class="sl-desc">처리 결과·상태·후속 결재/확인 액션 표시</div>
+          <div class="sl-arrow left">◀──</div>
+        </div>
+        <div class="sl-cell scz empty"></div>
+        <div class="sl-cell agent empty"></div>
+        <div class="sl-cell suz empty"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ④ 상세 14단계 — accordion -->
+  <details class="flow-detail-accordion">
+    <summary class="flow-detail-summary">📋 단계별 상세 설명 보기 (15단계 전체)</summary>
+    <div class="card" style="border-radius:0 0 8px 8px;border-top:none">
+      <div class="flow-row"><div class="flow-step" style="background:rgba(10,61,98,.2);border:1px solid rgba(10,61,98,.7);color:#4fc3f7">① 사용자 UI</div><div class="flow-arrow">→</div><div style="font-size:12px">사용자가 신청서·질의·증빙 파일을 업로드하고 요청을 보냄</div></div>
+      <div class="flow-row"><div class="flow-step" style="background:rgba(21,101,192,.2);border:1px solid rgba(21,101,192,.7);color:#64b5f6">② SCZ 진입</div><div class="flow-arrow">→</div><div style="font-size:12px">API Gateway가 인증·인가·기본 검증 후 Secure Connect Zone으로 라우팅</div></div>
+      <div class="flow-row"><div class="flow-step" style="background:rgba(78,52,46,.22);border:1px solid rgba(78,52,46,.7);color:#bcaaa4">③ SCZ 선처리</div><div class="flow-arrow">→</div><div style="font-size:12px">OCR 스킬로 첨부 이미지/PDF에서 원문 텍스트를 추출하고, 요청 컨텍스트를 정리</div></div>
+      <div class="flow-row"><div class="flow-step" style="background:rgba(74,20,140,.2);border:1px solid rgba(74,20,140,.7);color:#ce93d8">④ Agent 레시피 조회</div><div class="flow-arrow">→</div><div style="font-size:12px">MCP로 SCZ 하네스에 연결해 의료비/경조사/전표 등 적합한 레시피를 조회</div></div>
+      <div class="flow-row"><div class="flow-step" style="background:rgba(74,20,140,.2);border:1px solid rgba(74,20,140,.7);color:#ce93d8">⑤ Agent 플래닝</div><div class="flow-arrow">→</div><div style="font-size:12px">OCR 결과 기반으로 조회·검증·반영·리포트 스킬의 호출 순서와 분기를 결정</div></div>
+      <div class="flow-row"><div class="flow-step" style="background:rgba(57,73,171,.2);border:1px solid rgba(57,73,171,.7);color:#9fa8da">⑥ 스킬 실행</div><div class="flow-arrow">→</div><div style="font-size:12px">OCR / ERP 조회 / HR·그룹웨어 / 이상탐지 / 포맷 등의 스킬을 순차 호출</div></div>
+      <div class="flow-row"><div class="flow-step" style="background:rgba(27,67,50,.18);border:1px solid rgba(27,67,50,.65);color:#81c784">⑦ 시스템 API 호출</div><div class="flow-arrow">→</div><div style="font-size:12px">업무 성격에 따라 사내 ERP, 그룹웨어, 외부 API를 호출해 조회·검증·반영 수행</div></div>
+      <div class="flow-row"><div class="flow-step" style="background:rgba(21,101,192,.18);border:1px solid rgba(21,101,192,.65);color:#64b5f6">⑧ RAG / DB 작업</div><div class="flow-arrow">→</div><div style="font-size:12px">규정·매뉴얼 검색, 중복 신청 확인, 상태 저장, 감사 로그 기록 등 데이터 작업 수행</div></div>
+      <div class="flow-row"><div class="flow-step" style="background:rgba(255,193,7,.14);border:1px solid rgba(255,193,7,.55);color:#ffd54f">⑨ 정책/승인 확인</div><div class="flow-arrow">→</div><div style="font-size:12px">고위험 write 액션은 Policy Engine과 Approval Gate를 거쳐 수행 여부를 확정</div></div>
+      <div class="flow-row"><div class="flow-step" style="background:rgba(255,87,34,.18);border:1px solid rgba(255,87,34,.65);color:#ff8a65">⑩ PII 탐지·범주화</div><div class="flow-arrow">→</div><div style="font-size:12px">SCZ 마지막 단계에서 민감정보를 마스킹/차단하고 업무 판단용 범주 태그로 변환</div></div>
+      <div class="flow-row"><div class="flow-step" style="background:rgba(106,27,154,.18);border:1px solid rgba(106,27,154,.65);color:#ce93d8">⑪ Agent 결과 종합</div><div class="flow-arrow">→</div><div style="font-size:12px">Agent가 범주화 결과, 정책 결과, 검증 결과를 모아 사용자 관점에서 해석 가능한 상태로 정리</div></div>
+      <div class="flow-row"><div class="flow-step" style="background:rgba(74,20,140,.2);border:1px solid rgba(74,20,140,.7);color:#e1bee7">⑫ 판단 · 응답 결정</div><div class="flow-arrow">→</div><div style="font-size:12px">추가서류 요청, 승인 요청, 처리 완료 안내 등 어떤 결론과 다음 액션을 보여줄지 Agent가 결정</div></div>
+      <div class="flow-row"><div class="flow-step" style="background:rgba(46,125,82,.18);border:1px solid rgba(46,125,82,.65);color:#81c784">⑬ Agent 응답 생성</div><div class="flow-arrow">→</div><div style="font-size:12px">결정된 결론을 바탕으로 자연어 설명, 요약, 후속 안내 메시지를 생성</div></div>
+      <div class="flow-row"><div class="flow-step" style="background:rgba(21,101,192,.18);border:1px solid rgba(21,101,192,.65);color:#64b5f6">⑭ SCZ 최종 액션</div><div class="flow-arrow">→</div><div style="font-size:12px">Agent의 응답·실행 결정에 따라 SCZ가 사내시스템 결과 반영, 사내 메신저 알림 발송, 후속 워크플로우(결재선·일정 등록) 트리거를 수행</div></div>
+      <div class="flow-row"><div class="flow-step" style="background:rgba(10,61,98,.2);border:1px solid rgba(10,61,98,.7);color:#4fc3f7">⑮ 사용자 반환</div><div class="flow-arrow">→</div><div style="font-size:12px">사용자 UI에 처리 결과, 상태, 후속 결재/확인 액션을 보여줌</div></div>
+    </div>
+  </details>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════════
+     3. 레시피·스킬 페이지
+════════════════════════════════════════════════════════ -->
+<section id="tab-recipe" class="section">
+
+  <!-- ① 경고 배너 -->
+  <div class="warning-banner">
+    <div class="warning-icon">⚠️</div>
+    <div>
+      <div class="warning-title">구조 설계 예시 문서</div>
+      <div class="warning-desc">이 페이지의 모든 레시피·스킬 내용은 설계 방향을 보여주는 구조 예시입니다. 실제 운영 확정 항목과 메타정보는 운영자 승인 후 별도 운영 문서로 관리됩니다.</div>
+    </div>
+  </div>
+
+  <!-- 운영 포인트 4가지 -->
+  <div class="section-title">운영자가 이 페이지에서 바로 봐야 하는 4가지</div>
+  <div class="card" style="border-color:rgba(0,212,255,.35)">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div class="big-type" style="margin-bottom:0">운영 포인트 4가지</div>
+    </div>
+    <div class="rail">
+      <div class="rail-card"><div class="rail-num">01</div><div class="rail-title">업무 플레이북</div><div class="rail-desc">어떤 레시피가 있고 어떤 업무를 끝까지 처리하는가</div></div>
+      <div class="rail-card"><div class="rail-num">02</div><div class="rail-title">재사용 모듈</div><div class="rail-desc">같은 스킬을 어떤 업무들이 함께 쓰는가</div></div>
+      <div class="rail-card"><div class="rail-num">03</div><div class="rail-title">통제 지점</div><div class="rail-desc">승인·정책·검증·PII 범주화가 어디에 붙는가</div></div>
+      <div class="rail-card"><div class="rail-num">04</div><div class="rail-title">변경 포인트</div><div class="rail-desc">SUZ 결과를 보고 무엇을 업데이트해야 하는가</div></div>
+    </div>
+  </div>
+
+  <!-- 역할 구분 -->
+  <div class="section-title">한눈에 보는 역할 구분</div>
+  <div class="dual-panels">
+    <div class="card" style="border-color:rgba(106,27,154,.45);background:rgba(106,27,154,.05)">
+      <div class="example-badge">예시 개념도</div>
+      <div class="big-type" style="color:#ce93d8">레시피 = 업무 플레이북</div>
+      <div class="flow-lane">
+        <div class="flow-pill recipe">의료비 신청</div><div class="flow-connector">→</div>
+        <div class="flow-pill skill">OCR</div><div class="flow-connector">→</div>
+        <div class="flow-pill skill">ERP 조회</div><div class="flow-connector">→</div>
+        <div class="flow-pill decision">판단·응답 결정</div>
+      </div>
+      <div class="visual-note">업무 목적, 호출 스킬 묶음, 승인 지점, 반출 정책, 최종 사용자 응답을 함께 본다는 뜻입니다.</div>
+    </div>
+    <div class="card" style="border-color:rgba(57,73,171,.45);background:rgba(57,73,171,.05)">
+      <div class="example-badge">예시 개념도</div>
+      <div class="big-type" style="color:#9fa8da">스킬 = 표준 실행 모듈</div>
+      <div class="flow-lane">
+        <div class="flow-pill skill">입력 스키마</div><div class="flow-connector">→</div>
+        <div class="flow-pill skill">실행 로직</div><div class="flow-connector">→</div>
+        <div class="flow-pill skill">출력 스키마</div><div class="flow-connector">→</div>
+        <div class="flow-pill decision">관측·통제</div>
+      </div>
+      <div class="visual-note">입출력 계약, 권한, 타임아웃, 재시도, 리스크, 승인 필요 여부를 표준화해서 여러 업무에서 재사용한다는 뜻입니다.</div>
+    </div>
+  </div>
+
+  <!-- 레시피 카탈로그 -->
+  <div class="section-title">대표 레시피 예시 카탈로그</div>
+  <div class="recipe-cards">
+    <div class="recipe-card">
+      <div class="recipe-head"><div class="recipe-name">🏥 의료비 신청</div><div class="status-chip">구조 예시 (미확정)</div></div>
+      <div class="flow-lane" style="margin-bottom:10px">
+        <div class="flow-pill recipe">증빙 수신</div><div class="flow-connector">→</div><div class="flow-pill skill">OCR</div><div class="flow-connector">→</div><div class="flow-pill skill">중복·한도 확인</div><div class="flow-connector">→</div><div class="flow-pill decision">결과 안내</div>
+      </div>
+      <div class="mini-list">
+        <div class="mini-item"><span>•</span><span><b>목적</b> 의료비 지급 가능 여부와 후속 처리 판단</span></div>
+        <div class="mini-item"><span>•</span><span><b>대표 스킬</b> OCR / ERP 조회 / 검증·이상탐지 / 포맷</span></div>
+        <div class="mini-item"><span>•</span><span><b>통제 포인트</b> 급여성 여부, 중복 신청, 한도 초과, PII 범주화</span></div>
+        <div class="mini-item"><span>•</span><span><b>사용자 응답 예시</b> 지급 가능 / 추가서류 요청 / 반려 사유 안내</span></div>
+      </div>
+    </div>
+    <div class="recipe-card">
+      <div class="recipe-head"><div class="recipe-name">💐 경조사 신청</div><div class="status-chip">구조 예시 (미확정)</div></div>
+      <div class="flow-lane" style="margin-bottom:10px">
+        <div class="flow-pill recipe">신청 접수</div><div class="flow-connector">→</div><div class="flow-pill skill">HR 조회</div><div class="flow-connector">→</div><div class="flow-pill skill">RAG 규정 확인</div><div class="flow-connector">→</div><div class="flow-pill decision">결재 상신</div>
+      </div>
+      <div class="mini-list">
+        <div class="mini-item"><span>•</span><span><b>목적</b> 지급 조건 확인 후 결재/안내 자동화</span></div>
+        <div class="mini-item"><span>•</span><span><b>대표 스킬</b> 그룹웨어 API / RAG 검색 / 계산 / 포맷</span></div>
+        <div class="mini-item"><span>•</span><span><b>통제 포인트</b> 재직 상태, 관계 확인, 지급 유형, 승인 체계</span></div>
+        <div class="mini-item"><span>•</span><span><b>사용자 응답 예시</b> 접수 완료 / 결재 진행 상태 / 규정상 불가 안내</span></div>
+      </div>
+    </div>
+    <div class="recipe-card">
+      <div class="recipe-head"><div class="recipe-name">🧾 전표 처리</div><div class="status-chip">구조 예시 (미검토)</div></div>
+      <div class="flow-lane" style="margin-bottom:10px">
+        <div class="flow-pill recipe">전표 업로드</div><div class="flow-connector">→</div><div class="flow-pill skill">OCR</div><div class="flow-connector">→</div><div class="flow-pill skill">이상탐지</div><div class="flow-connector">→</div><div class="flow-pill decision">반영 여부 결정</div>
+      </div>
+      <div class="mini-list">
+        <div class="mini-item"><span>•</span><span><b>목적</b> 회계 처리 전 정합성과 이상 여부 확인</span></div>
+        <div class="mini-item"><span>•</span><span><b>대표 스킬</b> OCR / ERP 조회 / ERP 반영 / 검증·이상탐지</span></div>
+        <div class="mini-item"><span>•</span><span><b>통제 포인트</b> 계정 유효성, 금액 이상 여부, write 액션 승인</span></div>
+        <div class="mini-item"><span>•</span><span><b>사용자 응답 예시</b> 자동 반영 / 승인 요청 / 이상 거래 경고</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 스킬 운영 계약 -->
+  <div class="section-title">스킬 운영 계약 예시</div>
+  <div class="skill-catalog-note">
+    현재 4개 스킬 운영 계약 예시 수록 (OCR · ERP 조회 · ERP 반영 · 검증·이상탐지)<br>
+    <span style="color:var(--muted)">미수록: RAG 검색 · 그룹웨어 API · 포맷·리포트 · 신규 스킬 → 업무 확정 후 동일 메타 구조로 추가 예정</span>
+  </div>
+  <div class="skill-catalog">
+    <div class="skill-card">
+      <div class="skill-title">🔡 OCR 스킬 <span class="status-chip">구조 예시</span></div>
+      <div class="visual-note">증빙 이미지·PDF에서 텍스트와 필드 후보를 추출하는 기본 실행 모듈</div>
+      <div class="meta-grid">
+        <div class="meta-box"><div class="meta-k">입력</div><div class="meta-v">이미지/PDF, 업무 유형, 추출 대상 필드 목록</div></div>
+        <div class="meta-box"><div class="meta-k">출력</div><div class="meta-v">원문 텍스트, 필드 후보 JSON, 신뢰도</div></div>
+        <div class="meta-box"><div class="meta-k">운영 포인트</div><div class="meta-v">비동기 큐, 재시도, 파일 크기 제한, 실패 로그</div></div>
+        <div class="meta-box"><div class="meta-k">리스크</div><div class="meta-v">오인식, 누락 추출, 후속 검증 필요</div></div>
+      </div>
+    </div>
+    <div class="skill-card">
+      <div class="skill-title">📋 ERP 조회 스킬 <span class="status-chip">구조 예시</span></div>
+      <div class="visual-note">사번/문서번호/코드 기반으로 기준 데이터와 상태를 확인하는 읽기 전용 모듈</div>
+      <div class="meta-grid">
+        <div class="meta-box"><div class="meta-k">입력</div><div class="meta-v">사번, 증빙 번호, 계정 코드, 조회 범위</div></div>
+        <div class="meta-box"><div class="meta-k">출력</div><div class="meta-v">지급 이력, 상태 값, 기준 마스터 정보</div></div>
+        <div class="meta-box"><div class="meta-k">운영 포인트</div><div class="meta-v">read-only 계정, timeout, allowlist, 감사 로그</div></div>
+        <div class="meta-box"><div class="meta-k">리스크</div><div class="meta-v">기준 데이터 최신성, 시스템 지연</div></div>
+      </div>
+    </div>
+    <div class="skill-card">
+      <div class="skill-title">✏️ ERP 반영 스킬 <span class="status-chip">구조 예시</span></div>
+      <div class="visual-note">검증 완료된 결과를 업무 시스템에 실제 기록하는 write 모듈</div>
+      <div class="meta-grid">
+        <div class="meta-box"><div class="meta-k">입력</div><div class="meta-v">확정 데이터, 승인 결과, 처리 사유, 요청자 식별값</div></div>
+        <div class="meta-box"><div class="meta-k">출력</div><div class="meta-v">반영 결과, 전표/신청 번호, 오류 코드</div></div>
+        <div class="meta-box"><div class="meta-k">운영 포인트</div><div class="meta-v">Approval Gate, rollback, 멱등성, 변경 이력</div></div>
+        <div class="meta-box"><div class="meta-k">리스크</div><div class="meta-v">잘못된 write, 중복 반영, 승인 우회 방지</div></div>
+      </div>
+    </div>
+    <div class="skill-card">
+      <div class="skill-title">✅ 검증·이상탐지 스킬 <span class="status-chip">구조 예시</span></div>
+      <div class="visual-note">규정·기준치·패턴을 바탕으로 신청 또는 전표의 이상 여부를 판정하는 모듈</div>
+      <div class="meta-grid">
+        <div class="meta-box"><div class="meta-k">입력</div><div class="meta-v">금액, 계정, 이력, 규정 조건, 비교 기준</div></div>
+        <div class="meta-box"><div class="meta-k">출력</div><div class="meta-v">판정 결과, 위험 플래그, 설명 가능한 사유</div></div>
+        <div class="meta-box"><div class="meta-k">운영 포인트</div><div class="meta-v">정확도 추적, false positive 관리, 룰 버전 관리</div></div>
+        <div class="meta-box"><div class="meta-k">리스크</div><div class="meta-v">과탐/미탐, 규정 변경 미반영</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUZ 업데이트 루프 — 담당자 명시 -->
+  <div class="section-title">SUZ 결과가 레시피·스킬 업데이트로 이어지는 구조</div>
+  <div class="card">
+    <div class="update-loop">
+      <div class="loop-step">
+        <strong>1. 운영 신호 수집</strong>
+        <span class="loop-owner">SUZ 자동</span>
+        <span>오류율·지연시간·토큰·QA/EVAL 결과 수집</span>
+      </div>
+      <div class="loop-arrow">→</div>
+      <div class="loop-step">
+        <strong>2. 개선 포인트 도출</strong>
+        <span class="loop-owner">SUZ 자동</span>
+        <span>병목·품질 이슈가 발생한 레시피/스킬 식별</span>
+      </div>
+      <div class="loop-arrow">→</div>
+      <div class="loop-step">
+        <strong>3. 운영 담당자 검토</strong>
+        <span class="loop-owner">Ax Tech WG 운영팀</span>
+        <span>영향도·리스크를 보고 수정 범위와 우선순위 판단. 업무 부서 영향 시 공동 검토</span>
+      </div>
+      <div class="loop-arrow">→</div>
+      <div class="loop-step">
+        <strong>4. 운영자 OK 후 업데이트</strong>
+        <span class="loop-owner">Ax Tech WG + 업무 부서 공동 승인</span>
+        <span>승인 후 레시피 순서·스킬 계약·정책 문서 반영. 변경 이력은 Audit Log에 불변 기록</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 운영자 액션 체크리스트 (신규) -->
+  <div class="section-title">운영자 액션 체크리스트</div>
+  <div class="checklist-grid">
+    <div class="checklist-card">
+      <div class="checklist-head">📋 레시피 신규 등록 시</div>
+      <ul class="checklist-items">
+        <li>업무 목적과 사용자 응답 예시 정의</li>
+        <li>호출 스킬 목록과 실행 순서 확정</li>
+        <li>통제 포인트 (PII/승인/정책) 식별</li>
+        <li>실패 시나리오와 폴백 처리 정의</li>
+        <li>테스트 케이스 최소 3개 작성</li>
+        <li>운영팀 검토 및 승인</li>
+        <li>Audit Log 기록 시작 확인</li>
+        <li>SUZ 모니터링 대상에 추가</li>
+      </ul>
+    </div>
+    <div class="checklist-card">
+      <div class="checklist-head">🔧 스킬 업데이트 시</div>
+      <ul class="checklist-items">
+        <li>입출력 스키마 변경 여부 확인</li>
+        <li>해당 스킬을 사용하는 레시피 목록 파악</li>
+        <li>영향받는 레시피 회귀 테스트 수행</li>
+        <li>타임아웃·재시도 정책 재검토</li>
+        <li>업데이트 이유 Audit Log 기록</li>
+        <li>운영팀 승인 후 배포</li>
+      </ul>
+    </div>
+    <div class="checklist-card warn">
+      <div class="checklist-head">🚨 SUZ 경보 발생 시</div>
+      <ul class="checklist-items">
+        <li>오류 발생 레시피·스킬 식별</li>
+        <li>영향 범위 (사용자 수, 처리 건수) 파악</li>
+        <li>즉시 중단 vs 계속 운영 판단</li>
+        <li>개선 포인트 도출 및 우선순위 결정</li>
+        <li>업무 부서 알림 여부 판단 및 실행</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════
+     4. 범주화 엔진 페이지
+════════════════════════════════════════════════════════ -->
+<section id="tab-categ" class="section">
+  <div class="categ-header">
+    <h2>민감정보 범주화 엔진 설계</h2>
+    <p>PII를 AI 모델에 노출하지 않고 범주값으로 변환하는 3단계 파이프라인</p>
+  </div>
+
+  <div class="categ-main">
+
+    <!-- 처리 비율 바 -->
+    <div class="ratio-bar-wrap">
+      <div class="ratio-label">전체 케이스 처리 비율</div>
+      <div class="ratio-bar">
+        <div class="ratio-seg" style="flex:50;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff">
+          50%<br><span style="font-size:9px;opacity:.8">룰 처리</span>
+        </div>
+        <div class="ratio-seg" style="flex:30;background:linear-gradient(135deg,#065f46,#059669);color:#fff">
+          30%<br><span style="font-size:9px;opacity:.8">DB 조회</span>
+        </div>
+        <div class="ratio-seg" style="flex:20;background:linear-gradient(135deg,#5b21b6,#7c3aed);color:#fff">
+          20%<br><span style="font-size:9px;opacity:.8">sLM 판단</span>
+        </div>
+      </div>
+      <div class="ratio-legends">
+        <div class="ratio-legend"><div class="ratio-dot" style="background:#2563eb"></div>룰기반 마스킹 — GPU 불필요, 즉시 처리</div>
+        <div class="ratio-legend"><div class="ratio-dot" style="background:#059669"></div>스키마 + DB 조회 — 대부분의 범주 결정</div>
+        <div class="ratio-legend"><div class="ratio-dot" style="background:#7c3aed"></div>sLM 판단 — 모호한 엣지케이스만</div>
+      </div>
+    </div>
+
+    <!-- 파이프라인 -->
+    <div class="categ-pipeline">
+      <div class="categ-stage" style="--stage-color:#f59e0b" onclick="categToggle(0)">
+        <div class="categ-stage-num">STEP 1</div>
+        <div class="categ-stage-icon">🔒</div>
+        <div class="categ-stage-title">PII 마스킹</div>
+        <div class="categ-stage-sub">룰기반 패턴 탐지<br>즉시 치환</div>
+        <div class="categ-stage-badge">GPU 불필요</div>
+      </div>
+      <div class="categ-arrow"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M7 10h8M12 7l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div>
+      <div class="categ-stage" style="--stage-color:#3b82f6" onclick="categToggle(1)">
+        <div class="categ-stage-num">STEP 2</div>
+        <div class="categ-stage-icon">📋</div>
+        <div class="categ-stage-title">스키마 룰<br>+ DB 조회</div>
+        <div class="categ-stage-sub">레시피별 체크리스트<br>사내 시스템 조회</div>
+        <div class="categ-stage-badge">70~80% 해결</div>
+      </div>
+      <div class="categ-arrow"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M7 10h8M12 7l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div>
+      <div class="categ-stage" style="--stage-color:#8b5cf6" onclick="categToggle(2)">
+        <div class="categ-stage-num">STEP 3</div>
+        <div class="categ-stage-icon">🧠</div>
+        <div class="categ-stage-title">sLM<br>엣지케이스 판단</div>
+        <div class="categ-stage-sub">마스킹된 구조체만<br>모델에 투입</div>
+        <div class="categ-stage-badge">LoRA Fine-tuning</div>
+      </div>
+      <div class="categ-arrow"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M7 10h8M12 7l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div>
+      <div class="categ-stage" style="--stage-color:#10b981" onclick="categToggle(3)">
+        <div class="categ-stage-num">OUTPUT</div>
+        <div class="categ-stage-icon">🏷️</div>
+        <div class="categ-stage-title">범주값 태그<br>생성</div>
+        <div class="categ-stage-sub">Agent에 전달<br>원본 PII 없음</div>
+        <div class="categ-stage-badge">JSON 태그</div>
+      </div>
+    </div>
+
+    <!-- 상세 패널들 -->
+
+    <!-- STEP 1 상세 -->
+    <div class="categ-detail" id="cd0">
+      <div class="categ-detail-header">
+        <span style="font-size:20px">🔒</span>
+        <span class="categ-detail-title">STEP 1 — PII 마스킹</span>
+        <span class="categ-detail-tag" style="background:#78350f22;color:#f59e0b;border:1px solid #78350f55">룰기반 · GPU 불필요</span>
+      </div>
+      <div class="categ-detail-grid">
+        <div class="categ-detail-card">
+          <div class="categ-detail-card-title">입력 (원본)</div>
+          <div class="categ-code"><span class="r">홍길동</span> / <span class="r">900101-1234567</span>
+진단명: <span class="r">급성 편도염</span>
+청구금액: <span class="r">48,500</span>원
+병원코드: H2031
+신청일: 2026-04-07</div>
+        </div>
+        <div class="categ-detail-card">
+          <div class="categ-detail-card-title">출력 (마스킹 후)</div>
+          <div class="categ-code"><span class="s">[PERSON]</span> / <span class="s">[SSN]</span>
+진단카테고리: <span class="v">상기도감염</span>
+금액범위: <span class="v">4~5만원대</span>
+병원코드: <span class="v">H2031</span>  <span class="c">← 그대로</span>
+신청일: <span class="v">2026-04-07</span>  <span class="c">← 그대로</span></div>
+        </div>
+        <div class="categ-detail-card">
+          <div class="categ-detail-card-title">탐지 패턴 (예시)</div>
+          <div class="categ-flow-row">
+            <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">주민번호</span>
+            <span class="categ-flow-arrow">→</span>
+            <span class="categ-flow-note">XXX-XXXXXX 패턴 정규식</span>
+          </div>
+          <div class="categ-flow-row">
+            <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">이름</span>
+            <span class="categ-flow-arrow">→</span>
+            <span class="categ-flow-note">NER 사전 + 문맥 규칙</span>
+          </div>
+          <div class="categ-flow-row">
+            <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">진단명</span>
+            <span class="categ-flow-arrow">→</span>
+            <span class="categ-flow-note">의료 코드 → 카테고리 치환</span>
+          </div>
+          <div class="categ-flow-row">
+            <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">금액</span>
+            <span class="categ-flow-arrow">→</span>
+            <span class="categ-flow-note">실제값 → 범위(band)로 변환</span>
+          </div>
+        </div>
+        <div class="categ-detail-card">
+          <div class="categ-detail-card-title">인프라 구성 (관리형 AI 서비스 미사용)</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="categ-flow-row">
+              <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">정규식 엔진</span>
+              <span class="categ-flow-arrow">→</span>
+              <span class="categ-flow-note">Python re / Flashtext<br>주민번호·계좌·연락처 패턴</span>
+            </div>
+            <div class="categ-flow-row">
+              <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">NER 사전</span>
+              <span class="categ-flow-arrow">→</span>
+              <span class="categ-flow-note">klue/bert-base 또는<br>사내 구축 이름·기관 사전</span>
+            </div>
+            <div class="categ-flow-row">
+              <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">진단코드 매핑</span>
+              <span class="categ-flow-arrow">→</span>
+              <span class="categ-flow-note">KCD 코드 → 카테고리<br>로컬 룩업 테이블</span>
+            </div>
+            <div class="categ-flow-row">
+              <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">실행 환경</span>
+              <span class="categ-flow-arrow">→</span>
+              <span class="categ-flow-note">EC2 / ECS 컨테이너<br>GPU 불필요 · CPU만으로 충분</span>
+            </div>
+            <div style="margin-top:6px;padding:8px 10px;background:#04070e;border:1px solid #1a2540;border-radius:6px;font-size:10px;color:var(--muted);line-height:1.7">
+              ✓ 외부 AI 서비스 미사용 — 데이터 외부 전송 없음<br>
+              ✓ 오픈소스 라이브러리만 사용 (Presidio, spaCy 등)<br>
+              ✓ 사내 인프라 내에서 완결 처리<br>
+              ✓ 처리 속도: 건당 수 ms, 비용 최소
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 상세 -->
+    <div class="categ-detail" id="cd1">
+      <div class="categ-detail-header">
+        <span style="font-size:20px">📋</span>
+        <span class="categ-detail-title">STEP 2 — 스키마 룰 + DB 조회</span>
+        <span class="categ-detail-tag" style="background:#1e3a5f22;color:#3b82f6;border:1px solid #1e3a5f55">전체 케이스 70~80% 처리</span>
+      </div>
+      <div class="categ-detail-grid">
+        <div class="categ-detail-card" style="grid-column:1/-1">
+          <div class="categ-detail-card-title">의료비 신청 — 범주화 스키마</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
+            <div>
+              <div class="categ-flow-row"><span class="categ-flow-chip" style="background:#1e3a5f22;color:#60a5fa">급여성 항목?</span></div>
+              <div class="categ-code" style="font-size:10px"><span class="c">입력:</span> 병원코드 + 진료코드
+<span class="c">조회:</span> 건강보험 DB
+<span class="c">결과:</span> <span class="v">Y</span> / <span class="r">N</span>
+<span class="c">PII:</span> 없음 ✓</div>
+            </div>
+            <div>
+              <div class="categ-flow-row"><span class="categ-flow-chip" style="background:#1e3a5f22;color:#60a5fa">한도 초과?</span></div>
+              <div class="categ-code" style="font-size:10px"><span class="c">입력:</span> 사번 + 금액범위
+<span class="c">조회:</span> ERP 잔여한도
+<span class="c">결과:</span> <span class="v">Y</span> / <span class="r">N</span>
+<span class="c">PII:</span> 없음 ✓</div>
+            </div>
+            <div>
+              <div class="categ-flow-row"><span class="categ-flow-chip" style="background:#1e3a5f22;color:#60a5fa">가족 포함?</span></div>
+              <div class="categ-code" style="font-size:10px"><span class="c">입력:</span> 사번
+<span class="c">조회:</span> HR 피부양자 테이블
+<span class="c">결과:</span> <span class="v">Y</span> / <span class="r">N</span>
+<span class="c">PII:</span> 없음 ✓</div>
+            </div>
+            <div>
+              <div class="categ-flow-row"><span class="categ-flow-chip" style="background:#1e3a5f22;color:#60a5fa">중복 신청?</span></div>
+              <div class="categ-code" style="font-size:10px"><span class="c">입력:</span> 신청 해시값
+<span class="c">조회:</span> 이력 DB
+<span class="c">결과:</span> <span class="v">Y</span> / <span class="r">N</span>
+<span class="c">PII:</span> 없음 ✓</div>
+            </div>
+          </div>
+        </div>
+        <div class="categ-detail-card">
+          <div class="categ-detail-card-title">핵심 원칙</div>
+          <div class="categ-flow-note" style="line-height:2">
+            • 조회에 쓰이는 값은 <strong style="color:#60a5fa">코드값·해시·범위</strong><br>
+            • 실제 이름·주민번호·금액은 사용 안 함<br>
+            • 답이 Y/N으로 떨어지는 건 sLM 불필요<br>
+            • 레시피마다 스키마를 별도로 정의
+          </div>
+        </div>
+        <div class="categ-detail-card">
+          <div class="categ-detail-card-title">AWS 구성</div>
+          <div class="categ-flow-note" style="line-height:2">
+            • <strong style="color:#60a5fa">RDS</strong> — ERP, HR, 이력 DB<br>
+            • <strong style="color:#60a5fa">ElastiCache</strong> — 자주 쓰는 조회 캐싱<br>
+            • <strong style="color:#60a5fa">Step Functions</strong> — 조회 순서 오케스트레이션<br>
+            • GPU 없음, 비용 매우 낮음
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3 상세 -->
+    <div class="categ-detail" id="cd2">
+      <div class="categ-detail-header">
+        <span style="font-size:20px">🧠</span>
+        <span class="categ-detail-title">STEP 3 — sLM 엣지케이스 판단</span>
+        <span class="categ-detail-tag" style="background:#2e106522;color:#8b5cf6;border:1px solid #2e106555">전체 케이스 20% · GPU 필요</span>
+      </div>
+      <div class="categ-detail-grid">
+        <div class="categ-detail-card">
+          <div class="categ-detail-card-title">sLM이 보는 입력 (PII 없음)</div>
+          <div class="categ-code"><span class="c"># 원본 진단명, 이름, 금액 없음</span>
+{
+  <span class="k">"진단카테고리"</span>: <span class="p">"근골격계"</span>,
+  <span class="k">"포함항목코드"</span>: <span class="p">["PT001","MT002"]</span>,
+  <span class="k">"금액범위"</span>: <span class="p">"5~10만원대"</span>,
+  <span class="k">"규정"</span>: <span class="p">"근골격계는 물리치료
+           포함 시 급여 인정"</span>
+}</div>
+        </div>
+        <div class="categ-detail-card">
+          <div class="categ-detail-card-title">sLM 출력</div>
+          <div class="categ-code">{
+  <span class="k">"급여성"</span>: <span class="v">"Y"</span>,
+  <span class="k">"근거"</span>: <span class="p">"PT001 물리치료
+          코드 포함됨"</span>,
+  <span class="k">"신뢰도"</span>: <span class="v">0.94</span>
+}
+
+<span class="c"># 신뢰도 낮으면 사람 검토</span></div>
+        </div>
+        <div class="categ-detail-card">
+          <div class="categ-detail-card-title">추천 모델 + AWS 구성</div>
+          <table class="categ-aws-table">
+            <thead><tr><th>항목</th><th>선택</th></tr></thead>
+            <tbody>
+              <tr><td>모델</td><td style="color:#a78bfa">Phi-3-mini (3.8B)<br><span style="color:var(--muted);font-size:10px">또는 Gemma-2-9B / Qwen2.5-7B</span></td></tr>
+              <tr><td>라이선스</td><td style="color:#a78bfa">오픈소스 (MIT / Apache 2.0)</td></tr>
+              <tr><td>학습</td><td style="color:#a78bfa">LoRA Fine-tuning</td></tr>
+              <tr><td>GPU</td><td style="color:#a78bfa">g5.xlarge (A10G)</td></tr>
+              <tr><td>배포</td><td style="color:#a78bfa">SageMaker Endpoint</td></tr>
+              <tr><td>월 비용</td><td style="color:#10b981">약 50~100만원</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="categ-detail-card">
+          <div class="categ-detail-card-title">학습 데이터 구조</div>
+          <div class="categ-code" style="font-size:10px"><span class="c"># PII 제거 후 어노테이션</span>
+<span class="c"># 수백~수천 건으로 충분</span>
+
+입력: {
+  진단카테고리: <span class="p">"감기"</span>,
+  금액범위: <span class="p">"5만원 이하"</span>,
+  규정: <span class="p">"..."</span>
+}
+정답: {
+  급여성: <span class="v">"Y"</span>,
+  한도초과: <span class="v">"N"</span>
+}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OUTPUT 상세 -->
+    <div class="categ-detail" id="cd3">
+      <div class="categ-detail-header">
+        <span style="font-size:20px">🏷️</span>
+        <span class="categ-detail-title">OUTPUT — Agent에 전달되는 범주값</span>
+        <span class="categ-detail-tag" style="background:#064e3b22;color:#10b981;border:1px solid #064e3b55">PII 없음 · JSON 태그</span>
+      </div>
+      <div class="categ-detail-grid">
+        <div class="categ-detail-card">
+          <div class="categ-detail-card-title">의료비 신청 범주 태그</div>
+          <div class="categ-code">{
+  <span class="k">"한도초과"</span>: <span class="v">"N"</span>,
+  <span class="k">"급여성항목"</span>: <span class="v">"Y"</span>,
+  <span class="k">"가족포함"</span>: <span class="v">"Y"</span>,
+  <span class="k">"중복신청"</span>: <span class="v">"N"</span>,
+  <span class="k">"처리가능"</span>: <span class="v">"Y"</span>
+}
+
+<span class="c"># Agent는 이것만 봄
+# 이름·주민번호·진단명 없음</span></div>
+        </div>
+        <div class="categ-detail-card">
+          <div class="categ-detail-card-title">Agent가 생성하는 응답</div>
+          <div style="background:#04070e;border:1px solid #1a2540;border-radius:6px;padding:12px;font-size:12px;color:#94a3b8;line-height:1.8">
+            의료비 신청이 정상 처리되었습니다.<br>
+            급여성 항목으로 확인되었으며<br>
+            가족 피부양자 포함 건입니다.<br>
+            잔여 한도 내 지급 가능합니다.
+            <div style="margin-top:8px;font-size:10px;color:var(--muted)">
+              ← 실제 금액, 이름, 진단명 없이<br>범주값만으로 자연어 응답 생성
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 최종 요약 -->
+    <div class="categ-summary">
+      <div class="categ-summary-icon">⚡</div>
+      <div>
+        <div class="categ-summary-title">전체 파이프라인 요약</div>
+        <div class="categ-summary-flow">
+          <div class="sf-box" style="background:#78350f22;color:#f59e0b;border:1px solid #78350f44">① PII 마스킹<br><span style="font-size:9px;opacity:.7">룰 + Lambda</span></div>
+          <div class="sf-arrow">→</div>
+          <div class="sf-box" style="background:#1e3a5f22;color:#3b82f6;border:1px solid #1e3a5f44">② 스키마 + DB 조회<br><span style="font-size:9px;opacity:.7">70~80% 해결</span></div>
+          <div class="sf-arrow">→</div>
+          <div class="sf-box" style="background:#2e106522;color:#8b5cf6;border:1px solid #2e106544">③ sLM 엣지 판단<br><span style="font-size:9px;opacity:.7">20%만 · A10G</span></div>
+          <div class="sf-arrow">→</div>
+          <div class="sf-box" style="background:#064e3b22;color:#10b981;border:1px solid #064e3b44">④ 범주값 태그<br><span style="font-size:9px;opacity:.7">Agent 전달</span></div>
+        </div>
+        <div style="margin-top:12px;font-size:11px;color:var(--muted);line-height:1.8">
+          PII는 ①에서 이미 제거 — sLM은 마스킹된 구조체 + 규정 텍스트만 판단<br>
+          GPU(g5.xlarge)는 전체 트래픽의 20%만 처리 — 비용 효율적
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /categ-main -->
+</section>
+
+</div><!-- /content -->
+
+<script>
+const DETAIL_DATA = {
+  builder:{icon:'🏗️',title:'빌더 플랫폼',rows:[['역할','타 조직이 운영하는 Agent 생성·배포 플랫폼'],['연결','MCP를 통해 SCZ 하네스와 연동'],['비고','하네스는 불변 인터페이스, Agent는 교체 가능 컴포넌트']]},
+  agent_decision:{icon:'🧩',title:'판단 · 응답 결정',rows:[['역할','범주화 결과, 정책 결과, 검증 결과를 종합해 사용자 관점의 결론과 다음 액션을 결정'],['예시','추가서류 요청, 승인 요청, 처리 완료 안내, 예외 사유 설명'],['주의','업무상 최종 결재권을 의미하기보다 판단 보조와 응답 결정을 뜻함'],['핵심','SCZ에서 받은 태그(사실) 기반으로 해석(interpretation)을 수행']]},
+  agent_llm:{icon:'🤖',title:'Agent / LLM',rows:[['역할','레시피 조회, 플래닝, 응답 생성'],['입력','SCZ에서 전달된 범주 태그 + 일반 업무정보'],['주의','민감정보 원문 비노출 원칙 — 직접 시스템 호출 없음'],['핵심','모든 시스템 접근은 SCZ 스킬에 위임']]},
+  user_ui:{icon:'🖥️',title:'사용자 UI',rows:[['역할','임직원이 요청 입력 및 결과 확인'],['형태','웹/앱/챗 UI'],['연결','API Gateway 진입']]},
+  admin_ui:{icon:'⚙️',title:'관리자 UI',rows:[['역할','레시피·스킬 등록/관리, 정책 설정'],['접근','Ax Tech WG 운영팀 전용'],['연결','SUZ 대시보드와 운영 연계']]},
+  gateway:{icon:'🔀',title:'API Gateway',rows:[['역할','인증·인가·라우팅·기본 로깅'],['권장','rate limiting, request validation, outbound allowlist']]},
+  policy:{icon:'🧭',title:'Policy Engine',rows:[['역할','정보 반출 정책, 스킬 호출 정책, 마스킹/차단 정책 집행'],['이점','PII뿐 아니라 대외비/규제데이터까지 같은 프레임으로 제어']]},
+  approval:{icon:'✋',title:'Approval Gate',rows:[['역할','고위험 액션 전 승인'],['적용 예','ERP 반영, 외부 발송, 결재 상신'],['결과','승인 결과는 Audit Log에 불변 기록']]},
+  r_medical:{icon:'🏥',title:'의료비 신청 레시피',rows:[['흐름','OCR → 건보/ERP/구성원 조회 → 중복 확인 → 한도 조회 → 이력 등록'],['출력','[한도초과:N][급여성:Y][가족:Y][중복:N]'],['상태','구조 예시 (미확정)']]},
+  r_condolence:{icon:'💐',title:'경조사 신청 레시피',rows:[['흐름','HR 조회 → 규정 RAG 검색 → 계산 → 그룹웨어 결재'],['출력','[직계가족:Y][재직중:Y][지급유형:경조금]'],['상태','구조 예시 (미확정)']]},
+  r_voucher:{icon:'🧾',title:'전표 처리 레시피',rows:[['흐름','OCR → ERP 조회 → 이상탐지 → ERP 반영 → 포맷'],['주의','쓰기 액션은 approval 또는 정책 확인 필수'],['상태','구조 예시 (미검토)']]},
+  r_new:{icon:'＋',title:'신규 레시피',rows:[['방법','기존 스킬 조합으로 빠르게 추가'],['예시','출장비, 계약서 검토, 비품 신청'],['절차','Ax Tech WG 운영팀 + 업무 부서 공동 승인']]},
+  s_ocr:{icon:'🔡',title:'OCR 스킬',rows:[['역할','증빙 이미지/PDF에서 텍스트 추출'],['운영','비동기 큐·재시도 설계 권장']]},
+  s_erp_r:{icon:'📋',title:'ERP 조회 스킬',rows:[['역할','사번/코드 기반 조회'],['권한','read-only 자격증명 분리 권장']]},
+  s_erp_w:{icon:'✏️',title:'ERP 반영 스킬',rows:[['역할','검증 완료 데이터를 ERP에 기록'],['권장','approval gate, immutable audit, rollback 설계']]},
+  s_rag:{icon:'📚',title:'RAG 검색 스킬',rows:[['역할','사내 규정/매뉴얼 검색'],['주의','검색 결과를 지시문으로 해석하지 않도록 경계 분리']]},
+  s_hw:{icon:'🏢',title:'그룹웨어 API 스킬',rows:[['역할','결재선 생성·상태 조회·알림'],['권장','scope 최소화']]},
+  s_validate:{icon:'✅',title:'검증·이상탐지 스킬',rows:[['역할','금액·계정·규정 대비 이상 여부 판정']]},
+  s_format:{icon:'🎨',title:'포맷·리포트 스킬',rows:[['역할','JSON/표/보고서 형태로 결과 정리']]},
+  s_new:{icon:'＋',title:'신규 스킬',rows:[['의미','신규 업무에 필요한 원자 액션을 추가하는 확장 지점'],['예시','사번 검증, 파일 변환, 정책 조회, 벡터 재색인'],['권장','입출력 스키마·권한·timeout·retry·승인 필요 여부를 함께 정의']]},
+  context_mgr:{icon:'🧠',title:'Context 관리',rows:[['역할','세션 메모리/요약/장기 컨텍스트 관리'],['권장','민감 세션과 일반 세션 분리'],['미결','SCZ 내부 vs Agent 환경 위치 논의 중']]},
+  rag_store:{icon:'📖',title:'RAG Store',rows:[['역할','규정·문서 인덱싱 및 검색 저장소']]},
+  db:{icon:'🗄️',title:'DB',rows:[['역할','업무 데이터, 로그, 상태 저장'],['권장','업무 DB와 감사 로그 저장소 분리']]},
+  audit:{icon:'🧾',title:'Audit Log',rows:[['역할','누가/무엇을/왜 실행했는지 불변 이력 기록'],['포함','policy result, approval result, tool call summary'],['보존','실행 이력 1년, 정책·승인 이력 3년 (보안팀 협의 중)']]},
+  erp:{icon:'🏭',title:'사내 ERP',rows:[['역할','핵심 업무 시스템'],['주의','원본 데이터는 SCZ 내부에서만 처리']]},
+  groupware:{icon:'📬',title:'그룹웨어',rows:[['역할','결재·협업 시스템']]},
+  ext_api:{icon:'☁️',title:'외부 API',rows:[['역할','공공 API, OCR, 파트너 시스템'],['권장','allowlist, timeout, retry, circuit breaker']]},
+  secrets:{icon:'🔐',title:'Secrets Broker',rows:[['역할','툴별 단기 자격증명 발급'],['이점','하드코딩 제거, read/write 계정 분리']]},
+  pii:{icon:'🛡️',title:'PII 탐지 · 범주화',rows:[['위치','SCZ 내부 마지막 단계 — 반출 직전 마지막 통제'],['동작','탐지 → 마스킹/차단 → 범주화 → Agent 전달'],['원칙','민감정보는 태그화, 일반정보는 원본 전달'],['핵심','이 단계 이후 Agent는 원본 데이터를 받지 않는다']]},
+  suz_deploy:{icon:'🚀',title:'배포 파이프라인',rows:[['역할','SCZ + Agent 환경 양쪽 업데이트 검증 및 배포'],['미결','Agent 환경 배포 개입 범위 논의 중'],['권장','blue-green, rollback, staging']]},
+  suz_monitor:{icon:'📊',title:'모니터링·감사',rows:[['역할','SCZ·Agent 양쪽 지표 통합 수집'],['예시','오류율, 토큰 사용량, 지연시간, 품질 지표']]},
+  suz_token:{icon:'⚡',title:'토큰 최적화',rows:[['역할','불필요 컨텍스트 감축, 프롬프트 경량화'],['입력','모니터링 결과와 레시피별 추이'],['결과','압축 정책, 프롬프트 경량화 권고, 태그 정보량 조정']]},
+  suz_qaeval:{icon:'🧪',title:'Agent QA / EVAL',rows:[['역할','응답 신뢰성·일관성·컨텍스트 적절성 점검'],['입력','실행 로그, 샘플 대화, 레시피/스킬별 품질 이슈'],['결과','실패 패턴 식별, 재현 테스트, 운영 개선 포인트 도출']]},
+  suz_update_flow:{icon:'🔁',title:'SUZ 결과물 반영 흐름',rows:[['흐름','토큰/QA·EVAL 결과 도출 → [Ax Tech WG] 운영 담당자 전달 → [Ax Tech WG + 업무부서] 운영자 OK → 레시피/스킬 업데이트'],['의미','SUZ 결과를 실제 운영 자산 변경으로 연결하는 폐쇄루프'],['비고','승인 전에는 권고안, 승인 후에는 공식 업데이트로 반영']]}
+};
+
+const SKILL_NODE = {
+  'OCR':'n-s-ocr','건보 DB 조회':'n-s-erp-r','구성원 확인':'n-s-hw','중복 확인':'n-s-validate',
+  '한도 조회':'n-s-erp-r','이력 등록':'n-s-erp-w','HR 조회':'n-s-hw','RAG 검색':'n-s-rag',
+  '계산':'n-s-validate','그룹웨어 결재':'n-s-hw','포맷':'n-s-format','ERP 조회':'n-s-erp-r',
+  '이상탐지':'n-s-validate','ERP 반영':'n-s-erp-w'
+};
+
+const RECIPES = [
+  {name:'의료비 신청',scz:'n-r-medical',skills:['OCR','건보 DB 조회','구성원 확인','중복 확인','한도 조회','이력 등록'],tags:[['한도초과','N'],['급여성','Y'],['가족','Y'],['중복','N']]},
+  {name:'경조사 신청',scz:'n-r-condolence',skills:['HR 조회','RAG 검색','계산','그룹웨어 결재','포맷'],tags:[['직계가족','Y'],['재직중','Y'],['지급유형','경조금']]},
+  {name:'전표 검증',scz:'n-r-voucher',skills:['OCR','ERP 조회','이상탐지','ERP 반영','포맷'],tags:[['금액이상','N'],['계정유효','Y'],['결재권한','Y']]}
+];
+
+function setupTabs(){
+  document.querySelector('.nav-tabs').addEventListener('click',(e)=>{
+    const tab=e.target.closest('.nav-tab');
+    if(!tab)return;
+    document.querySelectorAll('.nav-tab').forEach(el=>el.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(el=>el.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-'+tab.dataset.tab)?.classList.add('active');
+  });
+}
+
+function setupDetailPanel(){
+  const panel=document.getElementById('detail-panel');
+  const empty=document.getElementById('detail-empty');
+  const content=document.getElementById('detail-content');
+  const icon=document.getElementById('d-icon');
+  const title=document.getElementById('d-title');
+  const rows=document.getElementById('d-rows');
+  document.body.addEventListener('click',(e)=>{
+    const target=e.target.closest('[data-node]');
+    if(!target)return;
+    const key=target.dataset.node;
+    const data=DETAIL_DATA[key];
+    if(!data)return;
+    document.querySelectorAll('.node,.pii-box,[data-node="suz_token"]').forEach(el=>el.classList.remove('active'));
+    target.classList.add('active');
+    empty.style.display='none';
+    content.style.display='block';
+    panel.style.borderColor='rgba(0,212,255,.55)';
+    icon.textContent=data.icon;
+    title.textContent=data.title;
+    rows.innerHTML=data.rows.map(([k,v])=>`<div class="detail-row"><div class="detail-label">${k}</div><div class="detail-value">${v}</div></div>`).join('');
+  });
+}
+
+function setupWorkflow(){
+  const recipeEls=Array.from(document.querySelectorAll('#wf-recipes .wf-r'));
+  const chain=document.getElementById('wf-skill-chain');
+  const tagWrap=document.getElementById('wf-tags');
+  let recipeIndex=0,rotateTimer=null,skillTimers=[],paused=false,activeSkillNode=null;
+  function clearSkillTimers(){skillTimers.forEach(t=>clearTimeout(t));skillTimers=[];}
+  function clearSCZ(){
+    document.querySelectorAll('.scz-fetch').forEach(el=>el.classList.remove('scz-fetch'));
+    if(activeSkillNode){document.getElementById(activeSkillNode)?.classList.remove('scz-skill-lit');activeSkillNode=null;}
+  }
+  function render(idx){
+    clearSkillTimers();clearSCZ();
+    const recipe=RECIPES[idx];
+    recipeEls.forEach((el,i)=>el.classList.toggle('active',i===idx));
+    document.getElementById(recipe.scz)?.classList.add('scz-fetch');
+    chain.innerHTML=recipe.skills.map((s,i)=>`<span class="wf-skill-item" id="wf-s-${i}">${s}</span>${i<recipe.skills.length-1?`<span class="wf-skill-sep" id="wf-sep-${i}">→</span>`:''}`).join('');
+    tagWrap.innerHTML=recipe.tags.map(([k,v])=>`<span class="wf-tag-item">${k}<span>${v}</span></span>`).join('');
+    recipe.skills.forEach((skill,i)=>{
+      const timer=setTimeout(()=>{
+        document.getElementById(`wf-s-${i}`)?.classList.add('lit');
+        if(i>0)document.getElementById(`wf-sep-${i-1}`)?.classList.add('lit');
+        if(activeSkillNode)document.getElementById(activeSkillNode)?.classList.remove('scz-skill-lit');
+        activeSkillNode=SKILL_NODE[skill];
+        document.getElementById(activeSkillNode)?.classList.add('scz-skill-lit');
+        if(i===recipe.skills.length-1){
+          document.querySelectorAll('.wf-tag-item').forEach((el,j)=>{skillTimers.push(setTimeout(()=>el.classList.add('show'),180*j));});
+        }
+      },450+(i*650));
+      skillTimers.push(timer);
+    });
+  }
+  function start(){
+    stop();render(recipeIndex);
+    rotateTimer=setInterval(()=>{if(paused)return;recipeIndex=(recipeIndex+1)%RECIPES.length;render(recipeIndex);},9000);
+  }
+  function stop(){if(rotateTimer)clearInterval(rotateTimer);clearSkillTimers();}
+  recipeEls.forEach((el,i)=>el.addEventListener('click',()=>{recipeIndex=i;start();}));
+  document.addEventListener('visibilitychange',()=>{paused=document.hidden;});
+  window.addEventListener('beforeunload',stop);
+  start();
+}
+
+setupTabs();
+setupDetailPanel();
+setupWorkflow();
+
+// ── 범주화 엔진 패널 토글 ──
+let categActive = null;
+function categToggle(idx) {
+  const panels = document.querySelectorAll('.categ-detail');
+  const stages = document.querySelectorAll('.categ-stage');
+  if (categActive === idx) {
+    panels[idx].classList.remove('show');
+    stages[idx].classList.remove('active');
+    categActive = null;
+  } else {
+    panels.forEach((p, i) => { p.classList.remove('show'); stages[i].classList.remove('active'); });
+    panels[idx].classList.add('show');
+    stages[idx].classList.add('active');
+    categActive = idx;
+    setTimeout(() => panels[idx].scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+  }
+}
+</script>
+</body>
+</html>
