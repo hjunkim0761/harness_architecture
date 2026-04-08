@@ -706,7 +706,7 @@ ul.clean li{margin:6px 0}
                 <div style="display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:8px;align-items:center">
                   <div class="card" style="padding:10px"><div style="font-size:10px;font-weight:800;color:#64b5f6;margin-bottom:4px">입력</div><div class="small">레시피 처리 완료 결과 (원본 포함)</div></div>
                   <div style="color:var(--accent)">→</div>
-                  <div class="card" style="padding:10px"><div style="font-size:10px;font-weight:800;color:#ff8a65;margin-bottom:4px">탐지</div><div class="small">룰기반 + 외부지식 + sLM 시맨틱<br>→ 마스킹 / 차단 / 감사로그</div></div>
+                  <div class="card" style="padding:10px"><div style="font-size:10px;font-weight:800;color:#ff8a65;margin-bottom:4px">탐지</div><div class="small">룰 + NER 하이브리드 + sLM 시맨틱<br>→ 마스킹 / 차단 / 감사로그</div></div>
                   <div style="color:var(--accent)">→</div>
                   <div class="card" style="padding:10px"><div style="font-size:10px;font-weight:800;color:#ff8a65;margin-bottom:4px">범주화</div><div class="small">민감정보는 범주 태그로 치환<br>일반정보는 원본 유지</div></div>
                 </div>
@@ -1204,14 +1204,18 @@ ul.clean li{margin:6px 0}
         <div class="ratio-seg" style="flex:30;background:linear-gradient(135deg,#065f46,#059669);color:#fff">
           30%<br><span style="font-size:9px;opacity:.8">DB 조회</span>
         </div>
-        <div class="ratio-seg" style="flex:20;background:linear-gradient(135deg,#5b21b6,#7c3aed);color:#fff">
-          20%<br><span style="font-size:9px;opacity:.8">sLM 판단</span>
+        <div class="ratio-seg" style="flex:10;background:linear-gradient(135deg,#6d28d9,#a78bfa);color:#fff">
+          10%<br><span style="font-size:9px;opacity:.8">규정 룰</span>
+        </div>
+        <div class="ratio-seg" style="flex:10;background:linear-gradient(135deg,#5b21b6,#7c3aed);color:#fff">
+          10%<br><span style="font-size:9px;opacity:.8">sLM 판단</span>
         </div>
       </div>
       <div class="ratio-legends">
-        <div class="ratio-legend"><div class="ratio-dot" style="background:#2563eb"></div>룰기반 마스킹 — GPU 불필요, 즉시 처리</div>
+        <div class="ratio-legend"><div class="ratio-dot" style="background:#2563eb"></div>룰 + NER 하이브리드 마스킹 — 룰 즉시 처리, NER 잔여 탐지</div>
         <div class="ratio-legend"><div class="ratio-dot" style="background:#059669"></div>스키마 + DB 조회 — 대부분의 범주 결정</div>
-        <div class="ratio-legend"><div class="ratio-dot" style="background:#7c3aed"></div>sLM 판단 — 모호한 엣지케이스만</div>
+        <div class="ratio-legend"><div class="ratio-dot" style="background:#a78bfa"></div>규정 룰 매칭 — 조건-결과 쌍으로 즉시 판단 (CPU)</div>
+        <div class="ratio-legend"><div class="ratio-dot" style="background:#7c3aed"></div>RAG + sLM 판단 — 진짜 모호한 엣지케이스만 (GPU)</div>
       </div>
     </div>
 
@@ -1221,8 +1225,8 @@ ul.clean li{margin:6px 0}
         <div class="categ-stage-num">STEP 1</div>
         <div class="categ-stage-icon">🔒</div>
         <div class="categ-stage-title">PII 마스킹</div>
-        <div class="categ-stage-sub">룰기반 패턴 탐지<br>즉시 치환</div>
-        <div class="categ-stage-badge">GPU 불필요</div>
+        <div class="categ-stage-sub">룰 1차 + NER 2차<br>하이브리드 탐지</div>
+        <div class="categ-stage-badge">GPU (sLM 공유)</div>
       </div>
       <div class="categ-arrow"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M7 10h8M12 7l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div>
       <div class="categ-stage" style="--stage-color:#3b82f6" onclick="categToggle(1)">
@@ -1236,9 +1240,9 @@ ul.clean li{margin:6px 0}
       <div class="categ-stage" style="--stage-color:#8b5cf6" onclick="categToggle(2)">
         <div class="categ-stage-num">STEP 3</div>
         <div class="categ-stage-icon">🧠</div>
-        <div class="categ-stage-title">sLM<br>엣지케이스 판단</div>
-        <div class="categ-stage-sub">마스킹된 구조체만<br>모델에 투입</div>
-        <div class="categ-stage-badge">LoRA Fine-tuning</div>
+        <div class="categ-stage-title">규정 룰 + RAG·sLM<br>하이브리드 판단</div>
+        <div class="categ-stage-sub">룰 매칭 1차 + RAG·sLM 2차<br>마스킹된 구조체만</div>
+        <div class="categ-stage-badge">GPU (RAG·sLM)</div>
       </div>
       <div class="categ-arrow"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M7 10h8M12 7l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div>
       <div class="categ-stage" style="--stage-color:#10b981" onclick="categToggle(3)">
@@ -1257,77 +1261,172 @@ ul.clean li{margin:6px 0}
       <div class="categ-detail-header">
         <span style="font-size:20px">🔒</span>
         <span class="categ-detail-title">STEP 1 — PII 마스킹</span>
-        <span class="categ-detail-tag" style="background:#78350f22;color:#f59e0b;border:1px solid #78350f55">룰기반 · GPU 불필요</span>
+        <span class="categ-detail-tag" style="background:#78350f22;color:#f59e0b;border:1px solid #78350f55">룰 + NER 하이브리드 · GPU</span>
       </div>
       <div class="categ-detail-grid">
+        <!-- 흐름 요약: full-width -->
+        <div class="categ-detail-card" style="grid-column:1/-1">
+          <div class="categ-detail-card-title">처리 흐름</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div style="padding:6px 12px;background:#78350f22;border:1px solid #78350f55;border-radius:6px;font-size:10px;font-weight:700;color:#f59e0b">Tier A — 룰기반 (CPU)</div>
+            <div style="font-size:10px;color:var(--muted)">정규식·사전으로 탐지</div>
+            <div style="font-size:14px;color:#f59e0b">→</div>
+            <div style="padding:4px 10px;background:#065f4622;border:1px solid #065f4655;border-radius:6px;font-size:10px;color:#10b981">탐지 성공 → 마스킹 완료</div>
+            <div style="font-size:10px;color:var(--muted);margin-left:8px">|</div>
+            <div style="padding:4px 10px;background:#7f1d1d22;border:1px solid #7f1d1d55;border-radius:6px;font-size:10px;color:#f87171">미탐지 잔여 텍스트</div>
+            <div style="font-size:14px;color:#fbbf24">→</div>
+            <div style="padding:6px 12px;background:#f59e0b22;border:1px solid #f59e0b55;border-radius:6px;font-size:10px;font-weight:700;color:#fbbf24">Tier B — NER 모델 (GPU)</div>
+            <div style="font-size:10px;color:var(--muted)">문맥 기반 보강 탐지</div>
+          </div>
+        </div>
+        <!-- Tier A 예시: 입력 -->
         <div class="categ-detail-card">
-          <div class="categ-detail-card-title">입력 (원본)</div>
+          <div class="categ-detail-card-title">Tier A 입력 (원본)</div>
           <div class="categ-code"><span class="r">홍길동</span> / <span class="r">900101-1234567</span>
 진단명: <span class="r">급성 편도염</span>
-청구금액: <span class="r">48,500</span>원
+청구금액: 48,500원  <span class="c">← 비민감</span>
 병원코드: H2031
 신청일: 2026-04-07</div>
         </div>
+        <!-- Tier A 예시: 출력 -->
         <div class="categ-detail-card">
-          <div class="categ-detail-card-title">출력 (마스킹 후)</div>
+          <div class="categ-detail-card-title">Tier A 출력 (룰 탐지 성공)</div>
+          <div class="categ-code"><span class="s">[PERSON]</span> / <span class="s">[SSN]</span>  <span class="c">← 사전·정규식 탐지</span>
+진단카테고리: <span class="v">상기도감염</span>  <span class="c">← KCD 매핑</span>
+청구금액: <span class="v">48,500</span>원  <span class="c">← 그대로</span>
+병원코드: <span class="v">H2031</span>  <span class="c">← 그대로</span>
+신청일: <span class="v">2026-04-07</span>  <span class="c">← 그대로</span>
+
+<span class="c">✓ 모든 PII 탐지 완료 → Tier B 생략</span></div>
+        </div>
+        <!-- Tier B 예시: 입력 (Tier A 실패 케이스) -->
+        <div class="categ-detail-card">
+          <div class="categ-detail-card-title">Tier B 입력 (Tier A가 놓친 경우)</div>
+          <div class="categ-code"><span class="c"># Tier A 처리 후 잔여 텍스트에 PII 의심</span>
+<span class="c"># 예: 비등록 인명, 주소, 기관명</span>
+
+<span class="s">[PERSON]</span> / <span class="s">[SSN]</span>
+진단카테고리: <span class="v">상기도감염</span>
+청구금액: <span class="v">48,500</span>원
+병원: <span class="r">서울 강남 좋은이비인후과</span>  <span class="c">← 미탐지</span>
+비고: <span class="r">김영희 대리 가족</span>  <span class="c">← 미탐지</span></div>
+        </div>
+        <!-- Tier B 예시: 출력 -->
+        <div class="categ-detail-card">
+          <div class="categ-detail-card-title">Tier B 출력 (NER 보강 탐지)</div>
           <div class="categ-code"><span class="s">[PERSON]</span> / <span class="s">[SSN]</span>
 진단카테고리: <span class="v">상기도감염</span>
-금액범위: <span class="v">4~5만원대</span>
-병원코드: <span class="v">H2031</span>  <span class="c">← 그대로</span>
-신청일: <span class="v">2026-04-07</span>  <span class="c">← 그대로</span></div>
+청구금액: <span class="v">48,500</span>원
+병원: <span class="s">[ORG]</span>  <span class="c">← NER이 기관명 탐지</span>
+비고: <span class="s">[PERSON]</span> 대리 가족  <span class="c">← NER이 인명 탐지</span>
+
+<span class="c">✓ Tier A 미탐지 → NER 모델이 문맥으로 보강</span></div>
         </div>
+        <!-- Tier A 탐지 패턴 -->
         <div class="categ-detail-card">
-          <div class="categ-detail-card-title">탐지 패턴 (예시)</div>
+          <div class="categ-detail-card-title">Tier A — 룰기반 탐지 패턴</div>
           <div class="categ-flow-row">
             <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">주민번호</span>
             <span class="categ-flow-arrow">→</span>
             <span class="categ-flow-note">XXX-XXXXXX 패턴 정규식</span>
           </div>
           <div class="categ-flow-row">
-            <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">이름</span>
+            <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">계좌·연락처</span>
             <span class="categ-flow-arrow">→</span>
-            <span class="categ-flow-note">NER 사전 + 문맥 규칙</span>
+            <span class="categ-flow-note">정규식 + Flashtext 사전 매칭</span>
+          </div>
+          <div class="categ-flow-row">
+            <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">이름 (사전)</span>
+            <span class="categ-flow-arrow">→</span>
+            <span class="categ-flow-note">사내 구성원 사전 + Flashtext</span>
           </div>
           <div class="categ-flow-row">
             <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">진단명</span>
             <span class="categ-flow-arrow">→</span>
-            <span class="categ-flow-note">의료 코드 → 카테고리 치환</span>
-          </div>
-          <div class="categ-flow-row">
-            <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">금액</span>
-            <span class="categ-flow-arrow">→</span>
-            <span class="categ-flow-note">실제값 → 범위(band)로 변환</span>
+            <span class="categ-flow-note">KCD 코드 → 카테고리 치환</span>
           </div>
         </div>
+        <!-- Tier B NER 탐지 대상 -->
         <div class="categ-detail-card">
+          <div class="categ-detail-card-title">Tier B — NER 보강 탐지 대상</div>
+          <div class="categ-flow-row">
+            <span class="categ-flow-chip" style="background:#f59e0b33;color:#fbbf24">PERSON</span>
+            <span class="categ-flow-arrow">→</span>
+            <span class="categ-flow-note">사전 미등록 인명 · 문맥 의존 표현</span>
+          </div>
+          <div class="categ-flow-row">
+            <span class="categ-flow-chip" style="background:#f59e0b33;color:#fbbf24">ORG</span>
+            <span class="categ-flow-arrow">→</span>
+            <span class="categ-flow-note">기관명·병원명 등 비정형 엔티티</span>
+          </div>
+          <div class="categ-flow-row">
+            <span class="categ-flow-chip" style="background:#f59e0b33;color:#fbbf24">LOC</span>
+            <span class="categ-flow-arrow">→</span>
+            <span class="categ-flow-note">주소·지번 등 위치 정보</span>
+          </div>
+          <div style="margin-top:6px;padding:6px 8px;background:#04070e;border:1px solid #1a2540;border-radius:6px;font-size:10px;color:var(--muted);line-height:1.6">
+            ✓ Tier A가 놓친 잔여 텍스트에서만 NER 수행 (GPU)<br>
+            ✓ 모델: 추후 협의 (예: klue/bert-base / spaCy / AWS Comprehend 등)<br>
+            ✓ STEP 3 sLM과 GPU 인스턴스 공유 → 추가 비용 최소
+          </div>
+        </div>
+        <div class="categ-detail-card" style="grid-column:1/-1">
           <div class="categ-detail-card-title">인프라 구성 (관리형 AI 서비스 미사용)</div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <div class="categ-flow-row">
-              <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">정규식 엔진</span>
-              <span class="categ-flow-arrow">→</span>
-              <span class="categ-flow-note">Python re / Flashtext<br>주민번호·계좌·연락처 패턴</span>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <!-- 좌측: Tier A -->
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="font-size:10px;font-weight:700;color:#f59e0b;padding:4px 8px;background:#78350f22;border-radius:4px;text-align:center">Tier A — 룰기반 (CPU)</div>
+              <div class="categ-flow-row">
+                <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">정규식 엔진</span>
+                <span class="categ-flow-arrow">→</span>
+                <span class="categ-flow-note">Python re / Flashtext<br>주민번호·계좌·연락처 패턴</span>
+              </div>
+              <div class="categ-flow-row">
+                <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">사전 매칭</span>
+                <span class="categ-flow-arrow">→</span>
+                <span class="categ-flow-note">사내 구축 이름·기관 사전<br>Flashtext O(n) 매칭</span>
+              </div>
+              <div class="categ-flow-row">
+                <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">진단코드 매핑</span>
+                <span class="categ-flow-arrow">→</span>
+                <span class="categ-flow-note">KCD 코드 → 카테고리<br>로컬 룩업 테이블</span>
+              </div>
+              <div class="categ-flow-row">
+                <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">실행 환경</span>
+                <span class="categ-flow-arrow">→</span>
+                <span class="categ-flow-note">EC2 / ECS 컨테이너<br>CPU만 · 건당 수 ms</span>
+              </div>
             </div>
-            <div class="categ-flow-row">
-              <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">NER 사전</span>
-              <span class="categ-flow-arrow">→</span>
-              <span class="categ-flow-note">klue/bert-base 또는<br>사내 구축 이름·기관 사전</span>
+            <!-- 우측: Tier B -->
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="font-size:10px;font-weight:700;color:#fbbf24;padding:4px 8px;background:#f59e0b22;border-radius:4px;text-align:center">Tier B — NER 모델 (GPU)</div>
+              <div class="categ-flow-row">
+                <span class="categ-flow-chip" style="background:#f59e0b33;color:#fbbf24">NER 모델</span>
+                <span class="categ-flow-arrow">→</span>
+                <span class="categ-flow-note">추후 협의<br><span style="opacity:.6">예: klue/bert-base / spaCy / AWS Comprehend 등</span></span>
+              </div>
+              <div class="categ-flow-row">
+                <span class="categ-flow-chip" style="background:#f59e0b33;color:#fbbf24">서빙 방식</span>
+                <span class="categ-flow-arrow">→</span>
+                <span class="categ-flow-note">STEP 3 sLM과<br>GPU 인스턴스 공유</span>
+              </div>
+              <div class="categ-flow-row">
+                <span class="categ-flow-chip" style="background:#f59e0b33;color:#fbbf24">Fallback</span>
+                <span class="categ-flow-arrow">→</span>
+                <span class="categ-flow-note">GPU 장애 시 Tier A만으로<br>보수적 마스킹 (운영 지속)</span>
+              </div>
+              <div class="categ-flow-row">
+                <span class="categ-flow-chip" style="background:#f59e0b33;color:#fbbf24">처리 성능</span>
+                <span class="categ-flow-arrow">→</span>
+                <span class="categ-flow-note">건당 10~50ms (GPU)<br>잔여 텍스트만 대상</span>
+              </div>
             </div>
-            <div class="categ-flow-row">
-              <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">진단코드 매핑</span>
-              <span class="categ-flow-arrow">→</span>
-              <span class="categ-flow-note">KCD 코드 → 카테고리<br>로컬 룩업 테이블</span>
-            </div>
-            <div class="categ-flow-row">
-              <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">실행 환경</span>
-              <span class="categ-flow-arrow">→</span>
-              <span class="categ-flow-note">EC2 / ECS 컨테이너<br>GPU 불필요 · CPU만으로 충분</span>
-            </div>
-            <div style="margin-top:6px;padding:8px 10px;background:#04070e;border:1px solid #1a2540;border-radius:6px;font-size:10px;color:var(--muted);line-height:1.7">
-              ✓ 외부 AI 서비스 미사용 — 데이터 외부 전송 없음<br>
-              ✓ 오픈소스 라이브러리만 사용 (Presidio, spaCy 등)<br>
-              ✓ 사내 인프라 내에서 완결 처리<br>
-              ✓ 처리 속도: 건당 수 ms, 비용 최소
-            </div>
+          </div>
+          <div style="margin-top:10px;padding:8px 10px;background:#04070e;border:1px solid #1a2540;border-radius:6px;font-size:10px;color:var(--muted);line-height:1.7">
+            ✓ 외부 AI 서비스 미사용 — 데이터 외부 전송 없음<br>
+            ✓ 오픈소스 라이브러리만 사용 (Presidio, spaCy, Transformers 등)<br>
+            ✓ 사내 인프라 내에서 완결 처리<br>
+            ✓ NER GPU는 STEP 3 sLM 인스턴스와 공유 — 추가 비용 최소
           </div>
         </div>
       </div>
@@ -1341,45 +1440,75 @@ ul.clean li{margin:6px 0}
         <span class="categ-detail-tag" style="background:#1e3a5f22;color:#3b82f6;border:1px solid #1e3a5f55">전체 케이스 70~80% 처리</span>
       </div>
       <div class="categ-detail-grid">
+        <!-- STEP 1에서 넘어온 입력 -->
+        <div class="categ-detail-card">
+          <div class="categ-detail-card-title">입력 (STEP 1 마스킹 결과)</div>
+          <div class="categ-code" style="font-size:10px"><span class="c"># 홍길동 의료비 신청 — STEP 1 출력 그대로</span>
+{
+  <span class="k">"진단카테고리"</span>: <span class="v">"상기도감염"</span>,
+  <span class="k">"청구금액"</span>: <span class="v">48500</span>,
+  <span class="k">"병원코드"</span>: <span class="v">"H2031"</span>,
+  <span class="k">"신청일"</span>: <span class="v">"2026-04-07"</span>,
+  <span class="k">"사번"</span>: <span class="v">"EMP-20145"</span>,
+  <span class="k">"신청해시"</span>: <span class="v">"a3f7c9..."</span>
+}
+
+<span class="c"># PII는 이미 제거됨 — 코드값만 사용</span></div>
+        </div>
+        <!-- DB 조회 결과 -->
+        <div class="categ-detail-card">
+          <div class="categ-detail-card-title">출력 (DB 조회 결과)</div>
+          <div class="categ-code" style="font-size:10px"><span class="c"># 4건 조회 → 모두 Y/N으로 즉시 확정</span>
+{
+  <span class="k">"한도초과"</span>: <span class="v">"N"</span>,
+  <span class="k">"가족포함"</span>: <span class="v">"Y"</span>,
+  <span class="k">"중복신청"</span>: <span class="v">"N"</span>,
+  <span class="k">"미해결"</span>: [<span class="p">"지급대상여부"</span>]
+}
+
+<span class="c"># 지급대상 판단은 규정 해석 필요</span>
+<span class="c"># → STEP 3으로 이관</span></div>
+        </div>
+        <!-- 조회 상세 -->
         <div class="categ-detail-card" style="grid-column:1/-1">
-          <div class="categ-detail-card-title">의료비 신청 — 범주화 스키마</div>
+          <div class="categ-detail-card-title">의료비 신청 — DB 조회 상세</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
             <div>
-              <div class="categ-flow-row"><span class="categ-flow-chip" style="background:#1e3a5f22;color:#60a5fa">급여성 항목?</span></div>
-              <div class="categ-code" style="font-size:10px"><span class="c">입력:</span> 병원코드 + 진료코드
-<span class="c">조회:</span> 건강보험 DB
-<span class="c">결과:</span> <span class="v">Y</span> / <span class="r">N</span>
-<span class="c">PII:</span> 없음 ✓</div>
-            </div>
-            <div>
               <div class="categ-flow-row"><span class="categ-flow-chip" style="background:#1e3a5f22;color:#60a5fa">한도 초과?</span></div>
-              <div class="categ-code" style="font-size:10px"><span class="c">입력:</span> 사번 + 금액범위
+              <div class="categ-code" style="font-size:10px"><span class="c">입력:</span> 사번 EMP-20145 + 48,500원
 <span class="c">조회:</span> ERP 잔여한도
-<span class="c">결과:</span> <span class="v">Y</span> / <span class="r">N</span>
+<span class="c">결과:</span> <span class="v">N</span> (잔여 451,500원)
 <span class="c">PII:</span> 없음 ✓</div>
             </div>
             <div>
               <div class="categ-flow-row"><span class="categ-flow-chip" style="background:#1e3a5f22;color:#60a5fa">가족 포함?</span></div>
-              <div class="categ-code" style="font-size:10px"><span class="c">입력:</span> 사번
+              <div class="categ-code" style="font-size:10px"><span class="c">입력:</span> 사번 EMP-20145
 <span class="c">조회:</span> HR 피부양자 테이블
-<span class="c">결과:</span> <span class="v">Y</span> / <span class="r">N</span>
+<span class="c">결과:</span> <span class="v">Y</span> (피부양자 등록 확인)
 <span class="c">PII:</span> 없음 ✓</div>
             </div>
             <div>
               <div class="categ-flow-row"><span class="categ-flow-chip" style="background:#1e3a5f22;color:#60a5fa">중복 신청?</span></div>
-              <div class="categ-code" style="font-size:10px"><span class="c">입력:</span> 신청 해시값
+              <div class="categ-code" style="font-size:10px"><span class="c">입력:</span> 해시 a3f7c9...
 <span class="c">조회:</span> 이력 DB
-<span class="c">결과:</span> <span class="v">Y</span> / <span class="r">N</span>
+<span class="c">결과:</span> <span class="v">N</span> (기존 이력 없음)
 <span class="c">PII:</span> 없음 ✓</div>
+            </div>
+            <div>
+              <div class="categ-flow-row"><span class="categ-flow-chip" style="background:#1e3a5f22;color:#60a5fa">지급대상?</span></div>
+              <div class="categ-code" style="font-size:10px"><span class="c">입력:</span> 진단카테고리 + 항목코드
+<span class="c">조회:</span> 단순 룩업 불가
+<span class="c">결과:</span> <span class="r">미결</span> (규정 해석 필요)
+<span class="c">→</span> STEP 3으로 이관</div>
             </div>
           </div>
         </div>
         <div class="categ-detail-card">
           <div class="categ-detail-card-title">핵심 원칙</div>
           <div class="categ-flow-note" style="line-height:2">
-            • 조회에 쓰이는 값은 <strong style="color:#60a5fa">코드값·해시·범위</strong><br>
-            • 실제 이름·주민번호·금액은 사용 안 함<br>
-            • 답이 Y/N으로 떨어지는 건 sLM 불필요<br>
+            • 조회에 쓰이는 값은 <strong style="color:#60a5fa">코드값·해시·사번</strong><br>
+            • 실제 이름·주민번호는 사용 안 함<br>
+            • Y/N으로 떨어지는 건 여기서 확정, 미결 건만 STEP 3 이관<br>
             • 레시피마다 스키마를 별도로 정의
           </div>
         </div>
@@ -1399,60 +1528,149 @@ ul.clean li{margin:6px 0}
     <div class="categ-detail" id="cd2">
       <div class="categ-detail-header">
         <span style="font-size:20px">🧠</span>
-        <span class="categ-detail-title">STEP 3 — sLM 엣지케이스 판단</span>
-        <span class="categ-detail-tag" style="background:#2e106522;color:#8b5cf6;border:1px solid #2e106555">전체 케이스 20% · GPU 필요</span>
+        <span class="categ-detail-title">STEP 3 — 규정 룰 + RAG·sLM 하이브리드 판단</span>
+        <span class="categ-detail-tag" style="background:#2e106522;color:#8b5cf6;border:1px solid #2e106555">규정 룰 1차 (CPU) + RAG·sLM 2차 (GPU)</span>
       </div>
       <div class="categ-detail-grid">
+        <!-- Tier A: 규정 룰 매칭 — 같은 홍길동 케이스 이어서 -->
         <div class="categ-detail-card">
-          <div class="categ-detail-card-title">sLM이 보는 입력 (PII 없음)</div>
-          <div class="categ-code"><span class="c"># 원본 진단명, 이름, 금액 없음</span>
+          <div class="categ-detail-card-title">입력 (STEP 2에서 미결 이관)</div>
+          <div class="categ-code"><span class="c"># 홍길동 의료비 신청 — STEP 2 미결 건</span>
+<span class="c"># "지급대상여부"만 남음</span>
 {
-  <span class="k">"진단카테고리"</span>: <span class="p">"근골격계"</span>,
+  <span class="k">"진단카테고리"</span>: <span class="v">"상기도감염"</span>,
+  <span class="k">"포함항목코드"</span>: <span class="p">["DG001"]</span>,
+  <span class="k">"청구금액"</span>: <span class="p">48500</span>,
+  <span class="k">"병원코드"</span>: <span class="p">"H2031"</span>
+}
+
+<span class="c"># 먼저 Tier A 규정 룰 매칭 시도</span></div>
+        </div>
+        <div class="categ-detail-card">
+          <div class="categ-detail-card-title">Tier A 성공 — 규정 룰 출력</div>
+          <div class="categ-code"><span class="c"># 진단카테고리 "상기도감염"이 정확히 매핑됨</span>
+<span class="c"># → 규정 DB 조건-결과 쌍 매칭 성공</span>
+{
+  <span class="k">"지급대상"</span>: <span class="v">"Y"</span>,
+  <span class="k">"근거"</span>: <span class="p">"사내 의료비 규정
+          제8조 1항 — 일반 외래 진료"</span>,
+  <span class="k">"판단방식"</span>: <span class="v">"rule"</span>,
+  <span class="k">"신뢰도"</span>: <span class="v">1.0</span>
+}
+
+<span class="c">✓ 규정 조항 직접 인용 — 감사 즉시 증빙</span></div>
+        </div>
+        <!-- Tier B: RAG + sLM -->
+        <div class="categ-detail-card">
+          <div class="categ-detail-card-title">만약 Tier A 실패 시 — RAG + sLM 이관</div>
+          <div class="categ-code"><span class="c"># 같은 홍길동이 다른 건을 신청했는데</span>
+<span class="c"># OCR 추출 진단명이 표준 코드에 매핑 안 되는 경우</span>
+<span class="c"># 예: "목 부위 통증 및 부종" → KCD 매핑 실패</span>
+
+<span class="c">① 검색 (Retrieval)</span>
+  쿼리: <span class="p">"목 부위 통증 및 부종 + PT001 + MT002"</span>
+  → 벡터 DB에서 관련 규정 top-k 검색
+
+<span class="c">② 검색된 규정 chunk</span>
+  <span class="p">"사내 의료비 규정 제12조 3항:
+   근골격계 질환은 물리치료 포함 시
+   지급 대상으로 인정한다"</span>
+
+<span class="c">③ sLM 입력 = 마스킹 구조체 + 규정 chunk</span>
+{
+  <span class="k">"진단카테고리"</span>: <span class="r">"미분류"</span>,
+  <span class="k">"OCR원문"</span>: <span class="p">"목 부위 통증 및 부종"</span>,
   <span class="k">"포함항목코드"</span>: <span class="p">["PT001","MT002"]</span>,
-  <span class="k">"금액범위"</span>: <span class="p">"5~10만원대"</span>,
-  <span class="k">"규정"</span>: <span class="p">"근골격계는 물리치료
-           포함 시 급여 인정"</span>
+  <span class="k">"청구금액"</span>: <span class="p">85000</span>,
+  <span class="k">"참조규정"</span>: <span class="p">"제12조 3항..."</span>
 }</div>
         </div>
         <div class="categ-detail-card">
-          <div class="categ-detail-card-title">sLM 출력</div>
+          <div class="categ-detail-card-title">Tier B — RAG + sLM 출력</div>
           <div class="categ-code">{
-  <span class="k">"급여성"</span>: <span class="v">"Y"</span>,
-  <span class="k">"근거"</span>: <span class="p">"PT001 물리치료
-          코드 포함됨"</span>,
-  <span class="k">"신뢰도"</span>: <span class="v">0.94</span>
+  <span class="k">"추정카테고리"</span>: <span class="v">"근골격계"</span>,
+  <span class="k">"지급대상"</span>: <span class="v">"Y"</span>,
+  <span class="k">"근거"</span>: <span class="p">"'목 부위 통증 및 부종'은
+          근골격계 질환에 해당,
+          PT001 물리치료 포함"</span>,
+  <span class="k">"참조규정"</span>: <span class="p">"제12조 3항"</span>,
+  <span class="k">"판단방식"</span>: <span class="v">"RAG+sLM"</span>,
+  <span class="k">"신뢰도"</span>: <span class="v">0.91</span>
 }
 
-<span class="c"># 신뢰도 낮으면 사람 검토</span></div>
+<span class="c"># 검색된 규정 원문 인용 → 감사 추적 가능</span>
+<span class="c"># 신뢰도 낮으면 사람 검토 에스컬레이션</span></div>
+        </div>
+        <!-- 인프라: 좌우 2열 -->
+        <div class="categ-detail-card" style="grid-column:1/-1">
+          <div class="categ-detail-card-title">인프라 구성</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <!-- 좌측: Tier A -->
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="font-size:10px;font-weight:700;color:#a78bfa;padding:4px 8px;background:#2e106522;border-radius:4px;text-align:center">Tier A — 규정 룰 매칭 (CPU)</div>
+              <div class="categ-flow-row">
+                <span class="categ-flow-chip" style="background:#2e106522;color:#a78bfa">규정 룰 DB</span>
+                <span class="categ-flow-arrow">→</span>
+                <span class="categ-flow-note">조건-결과 쌍 구조화<br>규정 변경 시 SUZ 연계 업데이트</span>
+              </div>
+              <div class="categ-flow-row">
+                <span class="categ-flow-chip" style="background:#2e106522;color:#a78bfa">매칭 엔진</span>
+                <span class="categ-flow-arrow">→</span>
+                <span class="categ-flow-note">Decision Tree / 점수표<br>조건 조합 판단</span>
+              </div>
+              <div class="categ-flow-row">
+                <span class="categ-flow-chip" style="background:#2e106522;color:#a78bfa">실행 환경</span>
+                <span class="categ-flow-arrow">→</span>
+                <span class="categ-flow-note">EC2 / ECS 컨테이너<br>CPU만 · 건당 수 ms</span>
+              </div>
+            </div>
+            <!-- 우측: Tier B -->
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="font-size:10px;font-weight:700;color:#8b5cf6;padding:4px 8px;background:#5b21b622;border-radius:4px;text-align:center">Tier B — RAG + sLM (GPU)</div>
+              <div class="categ-flow-row">
+                <span class="categ-flow-chip" style="background:#5b21b622;color:#8b5cf6">sLM</span>
+                <span class="categ-flow-arrow">→</span>
+                <span class="categ-flow-note">추후 협의<br><span style="opacity:.6">예: Phi-3-mini / Gemma / Qwen 등</span></span>
+              </div>
+              <div class="categ-flow-row">
+                <span class="categ-flow-chip" style="background:#5b21b622;color:#8b5cf6">임베딩 모델</span>
+                <span class="categ-flow-arrow">→</span>
+                <span class="categ-flow-note">추후 협의<br><span style="opacity:.6">예: OpenAI Embeddings / bge-m3 등</span></span>
+              </div>
+              <div class="categ-flow-row">
+                <span class="categ-flow-chip" style="background:#5b21b622;color:#8b5cf6">벡터 DB</span>
+                <span class="categ-flow-arrow">→</span>
+                <span class="categ-flow-note">추후 협의<br><span style="opacity:.6">예: OpenSearch / pgvector 등</span></span>
+              </div>
+              <div class="categ-flow-row">
+                <span class="categ-flow-chip" style="background:#5b21b622;color:#8b5cf6">배포</span>
+                <span class="categ-flow-arrow">→</span>
+                <span class="categ-flow-note">SageMaker Endpoint<br>g6.xlarge (L4) · STEP 1 NER 공유</span>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:10px;padding:8px 10px;background:#04070e;border:1px solid #1a2540;border-radius:6px;font-size:10px;color:var(--muted);line-height:1.7">
+            ✓ Tier A가 ~절반 처리 → sLM GPU 사용량 전체의 ~8-10%로 축소<br>
+            ✓ RAG 방식 — 신규 과제는 규정 문서 인제스트만으로 확장 (파인튜닝 불필요)<br>
+            ✓ 규정 변경 시 문서 교체로 즉시 반영 — LoRA 재학습 없음<br>
+            ✓ 검색된 규정 원문을 출처로 기록 → 감사 대응 즉시 가능<br>
+            ✓ sLM · 임베딩 모델 · 벡터 DB는 추후 협의하여 확정
+          </div>
         </div>
         <div class="categ-detail-card">
-          <div class="categ-detail-card-title">추천 모델 + AWS 구성</div>
-          <table class="categ-aws-table">
-            <thead><tr><th>항목</th><th>선택</th></tr></thead>
-            <tbody>
-              <tr><td>모델</td><td style="color:#a78bfa">Phi-3-mini (3.8B)<br><span style="color:var(--muted);font-size:10px">또는 Gemma-2-9B / Qwen2.5-7B</span></td></tr>
-              <tr><td>라이선스</td><td style="color:#a78bfa">오픈소스 (MIT / Apache 2.0)</td></tr>
-              <tr><td>학습</td><td style="color:#a78bfa">LoRA Fine-tuning</td></tr>
-              <tr><td>GPU</td><td style="color:#a78bfa">g5.xlarge (A10G)</td></tr>
-              <tr><td>배포</td><td style="color:#a78bfa">SageMaker Endpoint</td></tr>
-              <tr><td>월 비용</td><td style="color:#10b981">약 50~100만원</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="categ-detail-card">
-          <div class="categ-detail-card-title">학습 데이터 구조</div>
-          <div class="categ-code" style="font-size:10px"><span class="c"># PII 제거 후 어노테이션</span>
-<span class="c"># 수백~수천 건으로 충분</span>
+          <div class="categ-detail-card-title">규정 벡터 DB 구성 (Tier B RAG)</div>
+          <div class="categ-code" style="font-size:10px"><span class="c"># 과제(레시피)별 규정 문서를 chunk로 인제스트</span>
+<span class="c"># 신규 과제 = 규정 문서 추가만으로 확장</span>
 
-입력: {
-  진단카테고리: <span class="p">"감기"</span>,
-  금액범위: <span class="p">"5만원 이하"</span>,
-  규정: <span class="p">"..."</span>
+컬렉션: {
+  <span class="p">"의료비"</span>: [제8조, 제12조, 제15조...],
+  <span class="p">"경조사"</span>: [제3조, 제5조...],
+  <span class="p">"출장비"</span>: [제2조, 제7조...],
+  <span class="p">"교육비"</span>: [규정 인제스트 시 즉시 확장]
 }
-정답: {
-  급여성: <span class="v">"Y"</span>,
-  한도초과: <span class="v">"N"</span>
-}</div>
+
+<span class="c"># 규정 개정 → 해당 chunk 교체로 즉시 반영</span>
+<span class="c"># LoRA 재학습 불필요</span></div>
         </div>
       </div>
     </div>
@@ -1466,27 +1684,31 @@ ul.clean li{margin:6px 0}
       </div>
       <div class="categ-detail-grid">
         <div class="categ-detail-card">
-          <div class="categ-detail-card-title">의료비 신청 범주 태그</div>
-          <div class="categ-code">{
-  <span class="k">"한도초과"</span>: <span class="v">"N"</span>,
-  <span class="k">"급여성항목"</span>: <span class="v">"Y"</span>,
-  <span class="k">"가족포함"</span>: <span class="v">"Y"</span>,
-  <span class="k">"중복신청"</span>: <span class="v">"N"</span>,
-  <span class="k">"처리가능"</span>: <span class="v">"Y"</span>
-}
+          <div class="categ-detail-card-title">홍길동 의료비 신청 — 최종 범주 태그</div>
+          <div class="categ-code"><span class="c"># STEP 2 DB 조회 결과</span>
+  <span class="k">"한도초과"</span>: <span class="v">"N"</span>,    <span class="c">← STEP 2 ERP 조회</span>
+  <span class="k">"가족포함"</span>: <span class="v">"Y"</span>,    <span class="c">← STEP 2 HR 조회</span>
+  <span class="k">"중복신청"</span>: <span class="v">"N"</span>,    <span class="c">← STEP 2 이력 DB</span>
 
-<span class="c"># Agent는 이것만 봄
-# 이름·주민번호·진단명 없음</span></div>
+<span class="c"># STEP 3 규정 룰 판단 결과</span>
+  <span class="k">"지급대상"</span>: <span class="v">"Y"</span>,    <span class="c">← STEP 3 Tier A 룰</span>
+  <span class="k">"판단방식"</span>: <span class="v">"rule"</span>,  <span class="c">← 신뢰도 1.0</span>
+
+<span class="c"># 종합</span>
+  <span class="k">"처리가능"</span>: <span class="v">"Y"</span>
+
+<span class="c"># Agent는 이것만 봄 — 홍길동, 주민번호,</span>
+<span class="c"># 급성 편도염, 좋은이비인후과 모두 없음</span></div>
         </div>
         <div class="categ-detail-card">
           <div class="categ-detail-card-title">Agent가 생성하는 응답</div>
           <div style="background:#04070e;border:1px solid #1a2540;border-radius:6px;padding:12px;font-size:12px;color:#94a3b8;line-height:1.8">
             의료비 신청이 정상 처리되었습니다.<br>
-            급여성 항목으로 확인되었으며<br>
+            지급 대상 항목으로 확인되었으며<br>
             가족 피부양자 포함 건입니다.<br>
             잔여 한도 내 지급 가능합니다.
             <div style="margin-top:8px;font-size:10px;color:var(--muted)">
-              ← 실제 금액, 이름, 진단명 없이<br>범주값만으로 자연어 응답 생성
+              ← 홍길동, 48,500원, 급성 편도염 없이<br>범주값만으로 자연어 응답 생성
             </div>
           </div>
         </div>
@@ -1499,17 +1721,18 @@ ul.clean li{margin:6px 0}
       <div>
         <div class="categ-summary-title">전체 파이프라인 요약</div>
         <div class="categ-summary-flow">
-          <div class="sf-box" style="background:#78350f22;color:#f59e0b;border:1px solid #78350f44">① PII 마스킹<br><span style="font-size:9px;opacity:.7">룰 + Lambda</span></div>
+          <div class="sf-box" style="background:#78350f22;color:#f59e0b;border:1px solid #78350f44">① PII 마스킹<br><span style="font-size:9px;opacity:.7">룰 + NER 하이브리드</span></div>
           <div class="sf-arrow">→</div>
           <div class="sf-box" style="background:#1e3a5f22;color:#3b82f6;border:1px solid #1e3a5f44">② 스키마 + DB 조회<br><span style="font-size:9px;opacity:.7">70~80% 해결</span></div>
           <div class="sf-arrow">→</div>
-          <div class="sf-box" style="background:#2e106522;color:#8b5cf6;border:1px solid #2e106544">③ sLM 엣지 판단<br><span style="font-size:9px;opacity:.7">20%만 · A10G</span></div>
+          <div class="sf-box" style="background:#2e106522;color:#8b5cf6;border:1px solid #2e106544">③ 규정 룰 + RAG·sLM<br><span style="font-size:9px;opacity:.7">룰 1차 + RAG·sLM 2차</span></div>
           <div class="sf-arrow">→</div>
           <div class="sf-box" style="background:#064e3b22;color:#10b981;border:1px solid #064e3b44">④ 범주값 태그<br><span style="font-size:9px;opacity:.7">Agent 전달</span></div>
         </div>
         <div style="margin-top:12px;font-size:11px;color:var(--muted);line-height:1.8">
-          PII는 ①에서 이미 제거 — sLM은 마스킹된 구조체 + 규정 텍스트만 판단<br>
-          GPU(g5.xlarge)는 전체 트래픽의 20%만 처리 — 비용 효율적
+          PII는 ①에서 이미 제거 (룰 1차 → NER 2차) — ③은 마스킹된 구조체 + 규정 텍스트만 판단<br>
+          ③ Tier B는 RAG로 규정 검색 후 sLM 판단 — 신규 과제는 규정 문서 인제스트만으로 확장<br>
+          GPU(g6.xlarge / L4) 하나에 NER + sLM 공유 — sLM·임베딩 모델·벡터 DB는 추후 협의
         </div>
       </div>
     </div>
