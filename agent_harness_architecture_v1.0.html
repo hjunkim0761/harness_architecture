@@ -1285,7 +1285,7 @@ ul.clean li{margin:6px 0}
           <div class="categ-code"><span class="r">홍길동</span> / <span class="r">900101-1234567</span>
 진단명: <span class="r">급성 편도염</span>
 청구금액: 48,500원  <span class="c">← 비민감</span>
-병원코드: H2031
+진료유형: 외래
 신청일: 2026-04-07</div>
         </div>
         <!-- Tier A 예시: 출력 -->
@@ -1294,7 +1294,7 @@ ul.clean li{margin:6px 0}
           <div class="categ-code"><span class="s">[PERSON]</span> / <span class="s">[SSN]</span>  <span class="c">← 사전·정규식 탐지</span>
 진단카테고리: <span class="v">상기도감염</span>  <span class="c">← KCD 매핑</span>
 청구금액: <span class="v">48,500</span>원  <span class="c">← 그대로</span>
-병원코드: <span class="v">H2031</span>  <span class="c">← 그대로</span>
+진료유형: <span class="v">외래</span>  <span class="c">← 그대로</span>
 신청일: <span class="v">2026-04-07</span>  <span class="c">← 그대로</span>
 
 <span class="c">✓ 모든 PII 탐지 완료 → Tier B 생략</span></div>
@@ -1447,7 +1447,7 @@ ul.clean li{margin:6px 0}
 {
   <span class="k">"진단카테고리"</span>: <span class="v">"상기도감염"</span>,
   <span class="k">"청구금액"</span>: <span class="v">48500</span>,
-  <span class="k">"병원코드"</span>: <span class="v">"H2031"</span>,
+  <span class="k">"진료유형"</span>: <span class="v">"외래"</span>,
   <span class="k">"신청일"</span>: <span class="v">"2026-04-07"</span>,
   <span class="k">"사번"</span>: <span class="v">"EMP-20145"</span>,
   <span class="k">"신청해시"</span>: <span class="v">"a3f7c9..."</span>
@@ -1541,7 +1541,7 @@ ul.clean li{margin:6px 0}
   <span class="k">"진단카테고리"</span>: <span class="v">"상기도감염"</span>,
   <span class="k">"포함항목코드"</span>: <span class="p">["DG001"]</span>,
   <span class="k">"청구금액"</span>: <span class="p">48500</span>,
-  <span class="k">"병원코드"</span>: <span class="p">"H2031"</span>
+  <span class="k">"진료유형"</span>: <span class="p">"외래"</span>
 }
 
 <span class="c"># 먼저 Tier A 규정 룰 매칭 시도</span></div>
