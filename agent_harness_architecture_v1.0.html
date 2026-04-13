@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Agent 하네스 아키텍처 — AX Tech WG</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;600&display=swap');
 :root{
   --bg:#070e1a; --panel:#0d1b2a; --border:#1a3a5c; --accent:#00d4ff;
   --text:#c8d8e8; --text-bright:#eaf4ff; --muted:#6f86a3;
@@ -427,6 +428,42 @@ ul.clean li{margin:6px 0}
   .node,.wf-r,.wf-skill-item,.wf-tag-item,.nav-tab{transition:none !important}
 }
 
+/* ── 듀얼 레인 (데이터 흐름 탭) ── */
+.dual-lane-wrap{margin:16px 0;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--panel)}
+.dual-lane-header{display:grid;grid-template-columns:2fr 1fr 2.5fr 1fr;background:#0a1628;border-bottom:2px solid var(--border)}
+.dl-col{padding:11px 14px;font-size:11px;font-weight:800;letter-spacing:.4px}
+.dl-col.dl-item{color:var(--text-bright)}
+.dl-col.dl-origin{color:#64b5f6;border-left:1px solid var(--border)}
+.dl-col.dl-agent{color:#ce93d8;border-left:1px solid var(--border)}
+.dl-col.dl-type{color:var(--muted);border-left:1px solid var(--border)}
+.dual-lane-body{display:flex;flex-direction:column}
+.dl-row{display:grid;grid-template-columns:2fr 1fr 2.5fr 1fr;border-bottom:1px solid rgba(26,58,92,.25);min-height:42px;align-items:center}
+.dl-row:last-child{border-bottom:none}
+.dl-cell{padding:9px 14px;font-size:11px;line-height:1.5}
+.dl-cell.dl-origin{border-left:1px solid rgba(26,58,92,.25);color:var(--text)}
+.dl-cell.dl-agent{border-left:1px solid rgba(26,58,92,.25)}
+.dl-cell.dl-type{border-left:1px solid rgba(26,58,92,.25);text-align:center}
+.dl-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:9px;font-weight:800}
+.dl-badge.mask{background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.4);color:#f87171}
+.dl-badge.categ{background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.4);color:#fbbf24}
+.dl-badge.pass{background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.4);color:#34d399}
+.dl-blocked{color:#f87171;text-decoration:line-through;opacity:.5}
+.dl-categ{color:#fbbf24;font-weight:700}
+.dl-pass{color:#34d399;font-weight:700}
+.dl-result-box{margin:16px 0;padding:16px 18px;border-radius:12px;border:1px solid rgba(206,147,216,.35);background:rgba(106,27,154,.06)}
+.dl-result-title{font-size:12px;font-weight:800;color:#ce93d8;margin-bottom:10px}
+.dl-result-json{background:#04070e;border:1px solid #1a2540;border-radius:8px;padding:14px 16px;font-family:'SF Mono','Fira Code',monospace;font-size:11px;line-height:1.8;color:#94a3b8;white-space:pre;overflow-x:auto}
+.dl-result-json .k{color:#60a5fa}
+.dl-result-json .v{color:#34d399}
+.dl-result-json .c{color:#475569}
+.dl-result-json .p{color:#a78bfa}
+.dl-agent-response{margin-top:14px;padding:14px 16px;border-radius:10px;background:rgba(106,27,154,.08);border:1px solid rgba(106,27,154,.25);font-size:12px;color:#c8d8e8;line-height:1.9}
+.dl-agent-label{font-size:10px;font-weight:800;color:#ce93d8;margin-bottom:6px;letter-spacing:.5px}
+.dl-legend{display:flex;gap:14px;flex-wrap:wrap;margin:12px 0 4px;padding:10px 14px;background:rgba(13,27,42,.6);border-radius:8px}
+.dl-legend-item{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)}
+.dl-legend-dot{width:10px;height:10px;border-radius:3px}
+@media(max-width:700px){.dual-lane-header,.dl-row{grid-template-columns:1fr}}
+
 /* ── 범주화 엔진 페이지 ── */
 #tab-categ .categ-header{text-align:center;margin-bottom:40px}
 #tab-categ .categ-header h2{font-size:22px;font-weight:800;color:var(--text-bright);letter-spacing:-.3px;margin-bottom:8px}
@@ -501,6 +538,115 @@ ul.clean li{margin:6px 0}
   #tab-categ .categ-pipeline{flex-direction:column}
   #tab-categ .categ-arrow{transform:rotate(90deg);align-self:center}
   #tab-categ .categ-detail-grid{grid-template-columns:1fr}
+}
+
+/* ── 데이터 흐름 탭: 스윔레인 v7 ── */
+#tab-flow{
+  --sf-bg:#07090f;--sf-bg2:#0c101a;--sf-bg3:#111827;
+  --sf-scz:#38bdf8;--sf-scz-dim:rgba(56,189,248,.1);--sf-scz-border:rgba(56,189,248,.28);
+  --sf-agent:#c084fc;--sf-agent-dim:rgba(192,132,252,.1);--sf-agent-border:rgba(192,132,252,.28);
+  --sf-pass:#34d399;--sf-pass-dim:rgba(52,211,153,.1);--sf-pass-border:rgba(52,211,153,.3);
+  --sf-warn:#fbbf24;--sf-warn-dim:rgba(251,191,36,.1);--sf-warn-border:rgba(251,191,36,.3);
+  --sf-danger:#f87171;--sf-danger-dim:rgba(248,113,113,.1);--sf-danger-border:rgba(248,113,113,.3);
+  --sf-border:rgba(255,255,255,.07);--sf-text:#e2e8f0;--sf-mid:#94a3b8;--sf-dim:#475569;
+  --sf-mono:'IBM Plex Mono',monospace;--sf-sans:'Noto Sans KR','Apple SD Gothic Neo',sans-serif;
+}
+#tab-flow .sf-page-header{
+  background:rgba(7,9,15,.97);border-bottom:1px solid var(--sf-border);
+  padding:14px 20px;position:sticky;top:68px;z-index:10;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;border-radius:12px 12px 0 0;
+}
+#tab-flow .sf-ph-title{font-family:var(--sf-mono);font-size:12px;font-weight:600;color:var(--sf-pass);letter-spacing:.08em}
+#tab-flow .sf-ph-sub{font-size:11px;color:var(--sf-dim);font-family:var(--sf-mono);flex:1}
+#tab-flow .sf-legend{display:flex;gap:14px;padding:8px 20px;border-bottom:1px solid var(--sf-border);flex-wrap:wrap;background:rgba(7,9,15,.7)}
+#tab-flow .sf-leg{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--sf-mid);font-family:var(--sf-mono)}
+#tab-flow .sf-leg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+#tab-flow .sf-swim{display:grid;grid-template-columns:1fr 64px 1fr;min-height:100vh}
+#tab-flow .sf-lh{
+  position:sticky;top:125px;z-index:9;
+  padding:14px 0 12px;text-align:center;
+  font-family:var(--sf-mono);font-size:11px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;
+  border-bottom:2px solid;
+}
+#tab-flow .sf-lh.scz{background-color:var(--sf-bg2);background-image:linear-gradient(rgba(56,189,248,.07),rgba(56,189,248,.07));color:var(--sf-scz);border-color:var(--sf-scz);border-right:1px solid var(--sf-scz-border)}
+#tab-flow .sf-lh.mid-h{background:var(--sf-bg2);border-bottom:2px solid var(--sf-border);border-right:1px solid var(--sf-border);position:sticky;top:125px;z-index:9}
+#tab-flow .sf-lh.agent{background-color:var(--sf-bg2);background-image:linear-gradient(rgba(192,132,252,.07),rgba(192,132,252,.07));color:var(--sf-agent);border-color:var(--sf-agent)}
+#tab-flow .sf-lh-dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle}
+#tab-flow .sf-lh-sub{font-size:8px;opacity:.55;letter-spacing:.04em;display:block;margin-top:3px;font-weight:400}
+#tab-flow .sf-col-scz{background:rgba(56,189,248,.015);border-right:1px solid var(--sf-scz-border);padding:0 0 40px}
+#tab-flow .sf-col-mid{background:var(--sf-bg2);border-right:1px solid var(--sf-border);display:flex;flex-direction:column;align-items:center;padding:0}
+#tab-flow .sf-col-agent{background:rgba(192,132,252,.015);padding:0 0 40px}
+#tab-flow .sf-card{margin:12px 14px;background:var(--sf-bg2);border:1px solid var(--sf-border);border-radius:10px;overflow:hidden}
+#tab-flow .sf-card.sc{border-color:var(--sf-scz-border)}
+#tab-flow .sf-card.ag{border-color:var(--sf-agent-border)}
+#tab-flow .sf-card.wn{border-color:var(--sf-warn-border)}
+#tab-flow .sf-card.ps{border-color:var(--sf-pass-border)}
+#tab-flow .sf-card.dg{border-color:var(--sf-danger-border)}
+#tab-flow .sf-card-head{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;user-select:none}
+#tab-flow .sf-card-head:hover{background:rgba(255,255,255,.02)}
+#tab-flow .sf-ci{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+#tab-flow .sf-cn{font-size:11.5px;font-weight:600;flex:1;line-height:1.35;color:var(--sf-text)}
+#tab-flow .sf-cs{font-size:9.5px;color:var(--sf-dim);font-family:var(--sf-mono);line-height:1.4}
+#tab-flow .sf-cb{font-family:var(--sf-mono);font-size:9px;padding:2px 8px;border-radius:20px;font-weight:600;flex-shrink:0;white-space:nowrap}
+#tab-flow .sf-cb.sc{background:var(--sf-scz-dim);color:var(--sf-scz);border:1px solid var(--sf-scz-border)}
+#tab-flow .sf-cb.ag{background:var(--sf-agent-dim);color:var(--sf-agent);border:1px solid var(--sf-agent-border)}
+#tab-flow .sf-cb.ps{background:var(--sf-pass-dim);color:var(--sf-pass);border:1px solid var(--sf-pass-border)}
+#tab-flow .sf-cb.wn{background:var(--sf-warn-dim);color:var(--sf-warn);border:1px solid var(--sf-warn-border)}
+#tab-flow .sf-card-body{max-height:0;overflow:hidden;transition:max-height .4s ease}
+#tab-flow .sf-card-body.open{max-height:1600px}
+#tab-flow .sf-cbi{padding:10px 12px;border-top:1px solid var(--sf-border)}
+#tab-flow .sf-dbox{background:var(--sf-bg3);border:1px solid var(--sf-border);border-radius:6px;padding:8px 10px;font-family:var(--sf-mono);font-size:10px;line-height:1.9;margin-bottom:7px}
+#tab-flow .sf-dbox:last-child{margin-bottom:0}
+#tab-flow .sf-dbox.s{border-color:var(--sf-scz-border)}
+#tab-flow .sf-dbox.a{border-color:var(--sf-agent-border)}
+#tab-flow .sf-dbox.p{border-color:var(--sf-pass-border)}
+#tab-flow .sf-dbox.w{border-color:var(--sf-warn-border)}
+#tab-flow .sf-dbox.d{border-color:var(--sf-danger-border);background:var(--sf-danger-dim)}
+#tab-flow .sf-dl{font-size:9px;color:var(--sf-dim);font-weight:700;letter-spacing:.07em;margin-bottom:4px}
+#tab-flow .sf-tp{color:var(--sf-danger)}
+#tab-flow .sf-tc{color:var(--sf-warn)}
+#tab-flow .sf-tv{color:var(--sf-scz)}
+#tab-flow .sf-tg{color:var(--sf-pass)}
+#tab-flow .sf-ta{color:var(--sf-agent)}
+#tab-flow .sf-td{color:var(--sf-dim)}
+#tab-flow .sf-arrow-cell{
+  width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:10px 0;gap:4px;position:relative;flex:1;min-height:60px;
+}
+#tab-flow .sf-arrow-cell::before{content:'';position:absolute;top:0;bottom:0;left:50%;width:1px;background:rgba(255,255,255,.06);transform:translateX(-50%)}
+#tab-flow .sf-arr{font-size:20px;line-height:1;z-index:1;position:relative;background:var(--sf-bg2);padding:2px 4px}
+#tab-flow .sf-arr.to-scz{color:var(--sf-agent)}
+#tab-flow .sf-arr.to-agent{color:var(--sf-scz)}
+#tab-flow .sf-arr.both{color:var(--sf-warn)}
+#tab-flow .sf-arr-lbl{font-size:8px;font-family:var(--sf-mono);text-align:center;line-height:1.5;max-width:52px;background:var(--sf-bg2);z-index:1;position:relative;padding:0 2px}
+#tab-flow .sf-phase{
+  grid-column:1/-1;display:flex;align-items:center;gap:10px;
+  padding:10px 20px;background:rgba(255,255,255,.025);
+  border-top:1px solid var(--sf-border);border-bottom:1px solid var(--sf-border);
+  font-family:var(--sf-mono);font-size:10px;color:var(--sf-dim);letter-spacing:.05em;
+}
+#tab-flow .sf-pn{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;flex-shrink:0}
+#tab-flow .sf-adp{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:0}
+#tab-flow .sf-adp-c{background:var(--sf-bg3);border:1px solid var(--sf-border);border-radius:6px;padding:8px 9px;font-size:9.5px;line-height:1.75}
+#tab-flow .sf-adp-t{font-family:var(--sf-mono);font-size:9px;font-weight:700;color:var(--sf-scz);margin-bottom:4px;letter-spacing:.04em}
+#tab-flow .sf-adp-r{display:flex;justify-content:space-between;gap:4px}
+#tab-flow .sf-adp-k{color:var(--sf-dim)}
+#tab-flow .sf-adp-v{color:var(--sf-pass);font-family:var(--sf-mono)}
+#tab-flow .sf-jdg{display:flex;gap:7px;align-items:flex-start;padding:7px 10px;border-radius:6px;background:var(--sf-agent-dim);border:1px solid var(--sf-agent-border);font-size:10.5px;line-height:1.6;margin-bottom:6px}
+#tab-flow .sf-jdg:last-child{margin-bottom:0}
+#tab-flow .sf-jc{color:var(--sf-pass);font-size:12px;flex-shrink:0;margin-top:1px}
+#tab-flow .sf-jl{font-family:var(--sf-mono);font-size:9px;font-weight:700;color:var(--sf-agent);display:block;margin-bottom:1px}
+#tab-flow .sf-final-resp{background:linear-gradient(135deg,rgba(52,211,153,.07),rgba(56,189,248,.07));border:1px solid var(--sf-pass-border);border-radius:7px;padding:12px 14px;font-size:11.5px;line-height:1.9;margin-bottom:8px;color:var(--sf-text)}
+#tab-flow .sf-empty{padding:20px;display:flex;align-items:center;justify-content:center}
+#tab-flow .sf-empty span{font-size:9px;color:var(--sf-dim);font-family:var(--sf-mono);opacity:.45}
+#tab-flow .sf-swim-wrap{border:1px solid var(--sf-border);border-radius:12px;overflow:hidden;background:var(--sf-bg)}
+@media(max-width:680px){
+  #tab-flow .sf-swim{grid-template-columns:1fr 44px 1fr}
+  #tab-flow .sf-card{margin:8px 8px}
+  #tab-flow .sf-cn{font-size:10.5px}
+  #tab-flow .sf-adp{grid-template-columns:1fr}
+  #tab-flow .sf-lh{font-size:9px;padding:10px 0}
 }
 </style>
 </head>
@@ -798,174 +944,439 @@ ul.clean li{margin:6px 0}
 ════════════════════════════════════════════════════════ -->
 <section id="tab-flow" class="section">
 
-  <!-- ① 원칙 박스 — 최상단 -->
-  <div class="principle-box">
-    <div class="principle-row">
-      <span class="principle-badge scz">🔵 SCZ</span>
-      <span>사실(fact)을 처리한다 — 시스템 연동 · 데이터 검증 · PII 탐지·범주화 · 정책 집행</span>
-    </div>
-    <div class="principle-row">
-      <span class="principle-badge agent">🟣 Agent</span>
-      <span>해석(interpretation)을 한다 — 판단 보조 · 응답 결정 · 사용자 대화 맥락 처리</span>
-    </div>
-    <div class="principle-key">⚠️ Agent는 SCZ를 통해서만 시스템에 접근한다 — 직접 호출 없음</div>
+  <div class="sf-swim-wrap">
+
+  <div class="sf-page-header">
+    <div class="sf-ph-title">AGENT HARNESS — 데이터 흐름</div>
+    <div class="sf-ph-sub">의료비 신청 레시피 · 전체 파이프라인</div>
   </div>
 
-  <!-- ② 실행 주체 요약 — 상단으로 이동 -->
-  <div class="section-title">실행 주체별 역할</div>
-  <div class="doc-grid" style="margin-bottom:24px">
-    <div class="card">
-      <h3 style="color:#64b5f6;margin-bottom:10px">🔵 SCZ가 담당하는 것</h3>
-      <ul class="clean">
-        <li>입력 수신, 인증 이후 보안 경계 내 처리</li>
-        <li>OCR 선처리와 실제 스킬 런타임 수행</li>
-        <li>ERP/그룹웨어/외부 API/RAG/DB 접근</li>
-        <li>정책 확인, 승인 게이트, PII 탐지·범주화</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h3 style="color:#ce93d8;margin-bottom:10px">🟣 Agent가 담당하는 것</h3>
-      <ul class="clean">
-        <li>레시피 선택과 스킬 호출 순서 플래닝</li>
-        <li>분기 판단과 사용자 대화 맥락 해석</li>
-        <li>범주화·정책·검증 결과를 종합한 판단 보조</li>
-        <li>최종 응답과 다음 액션 결정 후 자연어로 설명</li>
-        <li style="color:#ff8a65;font-weight:700">직접 시스템을 호출하지 않고 SCZ를 통해 실행</li>
-      </ul>
-    </div>
+  <div class="sf-legend">
+    <div class="sf-leg"><div class="sf-leg-dot" style="background:var(--sf-scz)"></div>SCZ 처리</div>
+    <div class="sf-leg"><div class="sf-leg-dot" style="background:var(--sf-agent)"></div>Agent 호출/판단</div>
+    <div class="sf-leg"><div class="sf-leg-dot" style="background:var(--sf-pass)"></div>패스스루/검증값</div>
+    <div class="sf-leg"><div class="sf-leg-dot" style="background:var(--sf-warn)"></div>범주화 태그</div>
+    <div class="sf-leg"><div class="sf-leg-dot" style="background:var(--sf-danger)"></div>PII 차단</div>
+    <div class="sf-leg"><span style="color:var(--sf-agent);font-size:13px;line-height:1">←</span>&nbsp;Agent→SCZ 호출</div>
+    <div class="sf-leg"><span style="color:var(--sf-scz);font-size:13px;line-height:1">→</span>&nbsp;SCZ→Agent 반환</div>
   </div>
 
-  <!-- ③ 스윔레인 흐름도 -->
-  <div class="section-title">전체 데이터 흐름 — 주체별 스윔레인</div>
-  <div class="swimlane-wrap">
-    <div class="swimlane-header">
-      <div class="sl-col user">USER<span class="sl-org">요청 진입/결과 확인</span></div>
-      <div class="sl-col scz">SCZ<span class="sl-org">Ax Tech WG 담당</span></div>
-      <div class="sl-col agent">Agent 환경<span class="sl-org">타 조직 담당</span></div>
-      <div class="sl-col suz">SUZ<span class="sl-org">Ax Tech WG 담당</span></div>
+  <div class="sf-swim">
+
+    <!-- LANE HEADERS -->
+    <div class="sf-lh scz">
+      <span class="sf-lh-dot" style="background:var(--sf-scz)"></span>SCZ — AX Tech WG
+      <span class="sf-lh-sub">스킬 실행 · 데이터 처리 · PII 통제</span>
     </div>
-    <div class="swimlane-body">
-      <!-- 행 1: 요청 -->
-      <div class="sl-row">
-        <div class="sl-cell user active-cell">
-          <div class="sl-step">① 요청</div>
-          <div class="sl-desc">신청서·질의·증빙 파일 업로드</div>
-          <div class="sl-arrow right">──▶</div>
+    <div class="sf-lh mid-h"></div>
+    <div class="sf-lh agent">
+      <span class="sf-lh-dot" style="background:var(--sf-agent)"></span>Agent — 타 조직
+      <span class="sf-lh-sub">레시피 선택 · 스킬 요청 · 판단</span>
+    </div>
+
+    <!-- ═══════ PHASE 1 ═══════ -->
+    <div class="sf-phase">
+      <div class="sf-pn" style="background:var(--sf-pass-dim);color:var(--sf-pass);border:1px solid var(--sf-pass-border)">1</div>
+      요청 진입 — 파일 업로드 · 레시피 선택 · 범주화 스펙 정의
+    </div>
+
+    <div class="sf-col-scz">
+      <div class="sf-card sc" onclick="sfTog('sf-a')">
+        <div class="sf-card-head">
+          <div class="sf-ci" style="background:var(--sf-pass-dim)">📋</div>
+          <div><div class="sf-cn">① API Gateway 수신</div><div class="sf-cs">인증·인가·라우팅</div></div>
+          <span class="sf-cb ps">USER</span>
         </div>
-        <div class="sl-cell scz active-cell">
-          <div class="sl-step">② 진입·인증</div>
-          <div class="sl-desc">API Gateway 인증·인가·라우팅</div>
-        </div>
-        <div class="sl-cell agent empty"></div>
-        <div class="sl-cell suz empty"></div>
-      </div>
-      <!-- 행 2: 선처리 → MCP → 레시피·플래닝 -->
-      <div class="sl-row">
-        <div class="sl-cell user empty"></div>
-        <div class="sl-cell scz active-cell">
-          <div class="sl-step">③ SCZ 선처리</div>
-          <div class="sl-desc">OCR 스킬로 원문 추출, 요청 컨텍스트 정리</div>
-          <div class="sl-arrow right transfer-mcp">── MCP ──▶</div>
-        </div>
-        <div class="sl-cell agent active-cell">
-          <div class="sl-step">④ 레시피 조회</div>
-          <div class="sl-desc">MCP로 적합한 레시피 선택</div>
-          <br>
-          <div class="sl-step">⑤ 플래닝</div>
-          <div class="sl-desc">스킬 호출 순서·분기 결정</div>
-          <div class="sl-arrow left transfer-mcp">◀── 스킬 실행 요청 ──</div>
-        </div>
-        <div class="sl-cell suz empty"></div>
-      </div>
-      <!-- 행 3: 스킬 실행 묶음 -->
-      <div class="sl-row sl-row-group">
-        <div class="sl-cell user empty"></div>
-        <div class="sl-cell scz active-cell group-cell">
-          <div class="sl-step">⑥ ~ ⑩ 스킬 실행 (SCZ 내부)</div>
-          <div class="sl-desc" style="margin-top:6px">
-            <span style="color:#9fa8da;font-weight:700">⑥</span> 스킬 실행 요청 처리<br>
-            <span style="color:#9fa8da;font-weight:700">⑦</span> 시스템 API 호출 (ERP·그룹웨어·외부)<br>
-            <span style="color:#9fa8da;font-weight:700">⑧</span> RAG/DB 작업 (규정검색·상태저장·로그)<br>
-            <span style="color:#ffd54f;font-weight:700">⑨</span> 정책/승인 확인 (고위험 write 시)<br>
-            <span style="color:#ff8a65;font-weight:700">⑩</span> PII 탐지·범주화 → 민감정보 마스킹
+        <div class="sf-card-body open" id="sf-a"><div class="sf-cbi">
+          <div class="sf-dbox p">
+            <div class="sf-dl">📤 요청 메타 (파일 내용 미추출)</div>
+            사번: <span class="sf-tg">EMP-20145</span><br>
+            레시피: <span class="sf-tg">의료비신청</span><br>
+            첨부: <span class="sf-tg">img_001.jpg</span> (진단서)<br>
+            첨부: <span class="sf-tg">img_002.jpg</span> (영수증)
           </div>
-          <div class="sl-arrow right transfer-pii" style="margin-top:8px">── 범주화 결과 전달 ──▶</div>
-          <div class="sl-transfer-label">원본 없음 · 태그만 전달</div>
-        </div>
-        <div class="sl-cell agent empty"></div>
-        <div class="sl-cell suz empty"></div>
+        </div></div>
       </div>
-      <!-- 행 4: 결과 종합·판단 -->
-      <div class="sl-row">
-        <div class="sl-cell user empty"></div>
-        <div class="sl-cell scz empty"></div>
-        <div class="sl-cell agent active-cell">
-          <div class="sl-step">⑪ 결과 종합</div>
-          <div class="sl-desc">범주화·정책·검증 결과를 사용자 관점으로 정리</div>
-          <br>
-          <div class="sl-step">⑫ 판단·응답 결정</div>
-          <div class="sl-desc">추가서류 요청 / 승인 요청 / 처리 완료 안내 결정</div>
-          <br>
-          <div class="sl-step">⑬ 응답 생성</div>
-          <div class="sl-desc">결론을 자연어 메시지로 생성</div>
-          <div class="sl-arrow left transfer-mcp" style="margin-top:4px">◀── 최종 액션 실행 요청 ──</div>
-        </div>
-        <div class="sl-cell suz active-cell">
-          <div class="sl-step">데이터 수집</div>
-          <div class="sl-desc" style="color:var(--muted)">응답 품질·토큰·지연 지표 수집</div>
-        </div>
+    </div>
+    <div class="sf-col-mid">
+      <div class="sf-arrow-cell" style="gap:8px">
+        <div class="sf-arr to-agent" style="font-size:16px">→</div>
+        <div class="sf-arr-lbl" style="color:var(--sf-scz)">레시피 조회</div>
+        <div style="width:1px;height:10px;background:var(--sf-border);z-index:1;position:relative"></div>
+        <div class="sf-arr to-scz" style="font-size:16px">←</div>
+        <div class="sf-arr-lbl" style="color:var(--sf-agent)">실행 요청</div>
       </div>
-      <!-- 행 5: SCZ 최종 액션 -->
-      <div class="sl-row">
-        <div class="sl-cell user empty"></div>
-        <div class="sl-cell scz active-cell">
-          <div class="sl-step">⑭ SCZ 최종 액션 실행</div>
-          <div class="sl-desc" style="margin-top:6px">
-            <span style="color:#81c784;font-weight:700">•</span> 사내시스템 결과 반영 (ERP·그룹웨어 상태 업데이트)<br>
-            <span style="color:#81c784;font-weight:700">•</span> 사내 메신저 알림 발송 (처리 완료·승인 요청 등)<br>
-            <span style="color:#81c784;font-weight:700">•</span> 후속 워크플로우 트리거 (결재선 기동·일정 등록 등)
+    </div>
+    <div class="sf-col-agent">
+      <div class="sf-card ag" onclick="sfTog('sf-b')">
+        <div class="sf-card-head">
+          <div class="sf-ci" style="background:var(--sf-agent-dim)">🗺️</div>
+          <div><div class="sf-cn">② 레시피 기반 플래닝</div><div class="sf-cs">스킬 실행 계획 수립 · categorization_spec 정의 · SCZ 실행 위임</div></div>
+          <span class="sf-cb ag">AGENT</span>
+        </div>
+        <div class="sf-card-body open" id="sf-b"><div class="sf-cbi">
+          <div class="sf-dbox a">
+            <div class="sf-dl">→ SCZ 레시피 실행 요청</div>
+            recipe: <span class="sf-ta">"medical_claim_recipe"</span><br>
+            files: <span class="sf-tg">img_001.jpg, img_002.jpg</span><br>
+            employee_id: <span class="sf-tg">EMP-20145</span>
           </div>
-          <div class="sl-arrow left" style="color:#4fc3f7;margin-top:8px">◀──</div>
-        </div>
-        <div class="sl-cell agent empty"></div>
-        <div class="sl-cell suz empty"></div>
-      </div>
-      <!-- 행 6: 반환 -->
-      <div class="sl-row">
-        <div class="sl-cell user active-cell">
-          <div class="sl-step">⑮ 결과 반환</div>
-          <div class="sl-desc">처리 결과·상태·후속 결재/확인 액션 표시</div>
-          <div class="sl-arrow left">◀──</div>
-        </div>
-        <div class="sl-cell scz empty"></div>
-        <div class="sl-cell agent empty"></div>
-        <div class="sl-cell suz empty"></div>
+          <div class="sf-dbox s">
+            <div class="sf-dl">📋 레시피 스킬 목록 (실행 순서)</div>
+            <span class="sf-td">// 데이터 수집 · 범주화 (Phase 2~3)</span><br>
+            <span class="sf-tv">1</span> <span class="sf-tg">ocr</span> — 증빙 이미지 텍스트 추출<br>
+            <span class="sf-tv">2</span> <span class="sf-tg">nhis_verify</span> — 건보 API 병원 검증<br>
+            <span class="sf-tv">3</span> <span class="sf-tg">erp_limit</span> — SAP 연간한도 조회<br>
+            <span class="sf-tv">4</span> <span class="sf-tg">hr_relation</span> — 복지온 수진자관계 조회<br>
+            <span class="sf-tv">5</span> <span class="sf-tg">history_fetch</span> — 이력 DB YTD 조회<br>
+            <span class="sf-tv">6</span> <span class="sf-tc">categorize</span> — PII 마스킹 + 범주화 + 페이로드 조립<br>
+            <span class="sf-td">// 최종 액션 (Phase 5 · Agent 판단 후 호출)</span><br>
+            <span class="sf-tv">7</span> <span class="sf-tg">welfareon_update</span> — 복지온 관리자 상태 반영<br>
+            <span class="sf-tv">8</span> <span class="sf-tg">evidence_transfer</span> — 복지온 증빙이력 전송<br>
+            <span class="sf-tv">9</span> <span class="sf-tg">notify</span> — 사내 메신저 알림 발송<br>
+            <span class="sf-tv">10</span> <span class="sf-tg">audit_log</span> — 검증 이력 저장
+          </div>
+          <div class="sf-dbox w">
+            <div class="sf-dl">📋 categorization_spec (레시피 정의)</div>
+            <span class="sf-tc">"ocr.진단명"</span>: KCD → <span class="sf-tc">진단카테고리</span><br>
+            <span class="sf-tc">"ocr.병원명"</span>: 기관코드 → <span class="sf-tc">의료기관유형</span><br>
+            <span class="sf-tc">"이력[].진단명"</span>: KCD → <span class="sf-tc">진단카테고리</span><br>
+            <span class="sf-tc">"이력[].병원명"</span>: 기관코드 → <span class="sf-tc">의료기관유형</span>
+          </div>
+        </div></div>
       </div>
     </div>
-  </div>
 
-  <!-- ④ 상세 14단계 — accordion -->
-  <details class="flow-detail-accordion">
-    <summary class="flow-detail-summary">📋 단계별 상세 설명 보기 (15단계 전체)</summary>
-    <div class="card" style="border-radius:0 0 8px 8px;border-top:none">
-      <div class="flow-row"><div class="flow-step" style="background:rgba(10,61,98,.2);border:1px solid rgba(10,61,98,.7);color:#4fc3f7">① 사용자 UI</div><div class="flow-arrow">→</div><div style="font-size:12px">사용자가 신청서·질의·증빙 파일을 업로드하고 요청을 보냄</div></div>
-      <div class="flow-row"><div class="flow-step" style="background:rgba(21,101,192,.2);border:1px solid rgba(21,101,192,.7);color:#64b5f6">② SCZ 진입</div><div class="flow-arrow">→</div><div style="font-size:12px">API Gateway가 인증·인가·기본 검증 후 Secure Connect Zone으로 라우팅</div></div>
-      <div class="flow-row"><div class="flow-step" style="background:rgba(78,52,46,.22);border:1px solid rgba(78,52,46,.7);color:#bcaaa4">③ SCZ 선처리</div><div class="flow-arrow">→</div><div style="font-size:12px">OCR 스킬로 첨부 이미지/PDF에서 원문 텍스트를 추출하고, 요청 컨텍스트를 정리</div></div>
-      <div class="flow-row"><div class="flow-step" style="background:rgba(74,20,140,.2);border:1px solid rgba(74,20,140,.7);color:#ce93d8">④ Agent 레시피 조회</div><div class="flow-arrow">→</div><div style="font-size:12px">MCP로 SCZ 하네스에 연결해 의료비/경조사/전표 등 적합한 레시피를 조회</div></div>
-      <div class="flow-row"><div class="flow-step" style="background:rgba(74,20,140,.2);border:1px solid rgba(74,20,140,.7);color:#ce93d8">⑤ Agent 플래닝</div><div class="flow-arrow">→</div><div style="font-size:12px">OCR 결과 기반으로 조회·검증·반영·리포트 스킬의 호출 순서와 분기를 결정</div></div>
-      <div class="flow-row"><div class="flow-step" style="background:rgba(57,73,171,.2);border:1px solid rgba(57,73,171,.7);color:#9fa8da">⑥ 스킬 실행</div><div class="flow-arrow">→</div><div style="font-size:12px">OCR / ERP 조회 / HR·그룹웨어 / 이상탐지 / 포맷 등의 스킬을 순차 호출</div></div>
-      <div class="flow-row"><div class="flow-step" style="background:rgba(27,67,50,.18);border:1px solid rgba(27,67,50,.65);color:#81c784">⑦ 시스템 API 호출</div><div class="flow-arrow">→</div><div style="font-size:12px">업무 성격에 따라 사내 ERP, 그룹웨어, 외부 API를 호출해 조회·검증·반영 수행</div></div>
-      <div class="flow-row"><div class="flow-step" style="background:rgba(21,101,192,.18);border:1px solid rgba(21,101,192,.65);color:#64b5f6">⑧ RAG / DB 작업</div><div class="flow-arrow">→</div><div style="font-size:12px">규정·매뉴얼 검색, 중복 신청 확인, 상태 저장, 감사 로그 기록 등 데이터 작업 수행</div></div>
-      <div class="flow-row"><div class="flow-step" style="background:rgba(255,193,7,.14);border:1px solid rgba(255,193,7,.55);color:#ffd54f">⑨ 정책/승인 확인</div><div class="flow-arrow">→</div><div style="font-size:12px">고위험 write 액션은 Policy Engine과 Approval Gate를 거쳐 수행 여부를 확정</div></div>
-      <div class="flow-row"><div class="flow-step" style="background:rgba(255,87,34,.18);border:1px solid rgba(255,87,34,.65);color:#ff8a65">⑩ PII 탐지·범주화</div><div class="flow-arrow">→</div><div style="font-size:12px">SCZ 마지막 단계에서 민감정보를 마스킹/차단하고 업무 판단용 범주 태그로 변환</div></div>
-      <div class="flow-row"><div class="flow-step" style="background:rgba(106,27,154,.18);border:1px solid rgba(106,27,154,.65);color:#ce93d8">⑪ Agent 결과 종합</div><div class="flow-arrow">→</div><div style="font-size:12px">Agent가 범주화 결과, 정책 결과, 검증 결과를 모아 사용자 관점에서 해석 가능한 상태로 정리</div></div>
-      <div class="flow-row"><div class="flow-step" style="background:rgba(74,20,140,.2);border:1px solid rgba(74,20,140,.7);color:#e1bee7">⑫ 판단 · 응답 결정</div><div class="flow-arrow">→</div><div style="font-size:12px">추가서류 요청, 승인 요청, 처리 완료 안내 등 어떤 결론과 다음 액션을 보여줄지 Agent가 결정</div></div>
-      <div class="flow-row"><div class="flow-step" style="background:rgba(46,125,82,.18);border:1px solid rgba(46,125,82,.65);color:#81c784">⑬ Agent 응답 생성</div><div class="flow-arrow">→</div><div style="font-size:12px">결정된 결론을 바탕으로 자연어 설명, 요약, 후속 안내 메시지를 생성</div></div>
-      <div class="flow-row"><div class="flow-step" style="background:rgba(21,101,192,.18);border:1px solid rgba(21,101,192,.65);color:#64b5f6">⑭ SCZ 최종 액션</div><div class="flow-arrow">→</div><div style="font-size:12px">Agent의 응답·실행 결정에 따라 SCZ가 사내시스템 결과 반영, 사내 메신저 알림 발송, 후속 워크플로우(결재선·일정 등록) 트리거를 수행</div></div>
-      <div class="flow-row"><div class="flow-step" style="background:rgba(10,61,98,.2);border:1px solid rgba(10,61,98,.7);color:#4fc3f7">⑮ 사용자 반환</div><div class="flow-arrow">→</div><div style="font-size:12px">사용자 UI에 처리 결과, 상태, 후속 결재/확인 액션을 보여줌</div></div>
+    <!-- ═══════ PHASE 2 ═══════ -->
+    <div class="sf-phase">
+      <div class="sf-pn" style="background:var(--sf-scz-dim);color:var(--sf-scz);border:1px solid var(--sf-scz-border)">2</div>
+      SCZ 내부 실행 — 레시피 스킬 순차 실행 · Agent 대기
     </div>
-  </details>
+
+    <div class="sf-col-scz">
+      <div class="sf-card sc" onclick="sfTog('sf-c1')">
+        <div class="sf-card-head">
+          <div class="sf-ci" style="background:var(--sf-scz-dim)">🔡</div>
+          <div><div class="sf-cn">③ OCR 스킬</div><div class="sf-cs">이미지 → 구조화 텍스트 · PII 첫 출현</div></div>
+          <span class="sf-cb sc">SCZ</span>
+        </div>
+        <div class="sf-card-body" id="sf-c1"><div class="sf-cbi">
+          <div class="sf-dbox s">
+            <div class="sf-dl">📄 추출 결과 (SCZ 내부 보관)</div>
+            환자: <span class="sf-tp">홍길동</span> / <span class="sf-tp">900101-1234567</span><br>
+            진단명: <span class="sf-tp">급성 편도염</span><br>
+            병원: <span class="sf-tp">좋은이비인후과</span><br>
+            수진자: <span class="sf-tp">김영희</span><br>
+            진료일: <span class="sf-tg">2026-04-10</span><br>
+            금액: <span class="sf-tg">48,500</span> · 비급여: <span class="sf-tg">0</span><br>
+            신뢰도: <span class="sf-tg">0.97</span>
+          </div>
+        </div></div>
+      </div>
+      <div class="sf-card sc" onclick="sfTog('sf-c2')">
+        <div class="sf-card-head">
+          <div class="sf-ci" style="background:var(--sf-scz-dim)">🏥</div>
+          <div><div class="sf-cn">④ 건보 API + Adapter</div><div class="sf-cs">병원 실존·폐업 여부 검증</div></div>
+          <span class="sf-cb sc">SCZ</span>
+        </div>
+        <div class="sf-card-body" id="sf-c2"><div class="sf-cbi">
+          <div class="sf-dbox s">
+            <div class="sf-dl">⚙️ Adapter 처리</div>
+            raw: ykiho=<span class="sf-tg">"B1234"</span> · closeYn=<span class="sf-tg">"N"</span><br>
+            → 건보등록: <span class="sf-tg">true</span> · 폐업: <span class="sf-tg">false</span>
+          </div>
+        </div></div>
+      </div>
+      <div class="sf-card sc" onclick="sfTog('sf-c3')">
+        <div class="sf-card-head">
+          <div class="sf-ci" style="background:var(--sf-scz-dim)">💰</div>
+          <div><div class="sf-cn">⑤ SAP ERP 조회 + Adapter</div><div class="sf-cs">연간 의료비 한도 조회</div></div>
+          <span class="sf-cb sc">SCZ</span>
+        </div>
+        <div class="sf-card-body" id="sf-c3"><div class="sf-cbi">
+          <div class="sf-dbox s">
+            <div class="sf-dl">⚙️ Adapter 처리</div>
+            raw: ZAMT_LIMIT_SELF=<span class="sf-tg">200000</span> · ZAMT_LIMIT_FAM=<span class="sf-tg">300000</span><br>
+            → 본인한도: <span class="sf-tg">200,000</span> · 가족통합한도: <span class="sf-tg">300,000</span>
+          </div>
+        </div></div>
+      </div>
+      <div class="sf-card sc" onclick="sfTog('sf-c4')">
+        <div class="sf-card-head">
+          <div class="sf-ci" style="background:var(--sf-scz-dim)">👤</div>
+          <div><div class="sf-cn">⑥ 복지온 HR 조회 + Adapter</div><div class="sf-cs">수진자 관계 코드 매핑</div></div>
+          <span class="sf-cb sc">SCZ</span>
+        </div>
+        <div class="sf-card-body" id="sf-c4"><div class="sf-cbi">
+          <div class="sf-dbox s">
+            <div class="sf-dl">⚙️ Adapter 처리</div>
+            raw: dpdtSecd=<span class="sf-tg">"02"</span><br>
+            → 수진자관계: <span class="sf-tv">"배우자"</span>
+          </div>
+        </div></div>
+      </div>
+      <div class="sf-card sc" onclick="sfTog('sf-c5')">
+        <div class="sf-card-head">
+          <div class="sf-ci" style="background:var(--sf-scz-dim)">📚</div>
+          <div><div class="sf-cn">⑦ 이력 DB 조회 + Adapter</div><div class="sf-cs">2026년 YTD 신청이력 페치</div></div>
+          <span class="sf-cb sc">SCZ</span>
+        </div>
+        <div class="sf-card-body" id="sf-c5"><div class="sf-cbi">
+          <div class="sf-dbox s">
+            <div class="sf-dl">⚙️ 페치 결과 (범주화 전 · 진단명 원본)</div>
+            건①: 2026-01-08 · <span class="sf-tp">치아교정</span> · 자녀 · 55,000<br>
+            건②: 2026-03-15 · <span class="sf-tp">급성인두염</span> · 본인 · 32,000<br>
+            건③: 2026-04-10 · <span class="sf-tp">급성편도염</span> · 본인 · 10,000<br>
+            <span class="sf-td">→ 진단명 PII → 범주화 스킬 이관</span>
+          </div>
+        </div></div>
+      </div>
+    </div>
+    <div class="sf-col-mid">
+      <div class="sf-arrow-cell" style="flex:1;min-height:300px">
+        <div class="sf-arr-lbl sf-td" style="font-size:8px;writing-mode:vertical-rl;opacity:.4;letter-spacing:.1em">SCZ 내부 실행</div>
+      </div>
+    </div>
+    <div class="sf-col-agent">
+      <div class="sf-empty" style="height:100%"><span>SCZ 내부 실행 중<br>Agent 대기…</span></div>
+    </div>
+
+    <!-- ═══════ PHASE 3 ═══════ -->
+    <div class="sf-phase">
+      <div class="sf-pn" style="background:var(--sf-warn-dim);color:var(--sf-warn);border:1px solid var(--sf-warn-border)">3</div>
+      범주화 엔진 — 레시피 spec 적용 · PII 마스킹 · 단일 페이로드 조립 후 반환
+    </div>
+
+    <div class="sf-col-scz">
+      <div class="sf-card wn" onclick="sfTog('sf-e1')">
+        <div class="sf-card-head">
+          <div class="sf-ci" style="background:var(--sf-warn-dim)">🧠</div>
+          <div><div class="sf-cn">⑧ 범주화 스킬</div><div class="sf-cs">PII 마스킹 → spec 적용 → 전체 페이로드 조립</div></div>
+          <span class="sf-cb wn">범주화</span>
+        </div>
+        <div class="sf-card-body open" id="sf-e1"><div class="sf-cbi">
+          <div class="sf-dbox w">
+            <div class="sf-dl">📋 spec 기반 필드별 처리</div>
+            <span class="sf-tp">급성 편도염</span> → J069 → <span class="sf-tc">상기도감염</span><br>
+            <span class="sf-tp">좋은이비인후과</span> → 기관코드 → <span class="sf-tc">외래-일반</span> (병원명 차단)<br>
+            <span class="sf-tp">치아교정</span> → K00 → <span class="sf-tc">치과일반</span><br>
+            <span class="sf-tp">급성인두염</span> → J029 → <span class="sf-tc">상기도감염</span><br>
+            <span class="sf-tp">급성편도염</span> → J069 → <span class="sf-tc">상기도감염</span>
+          </div>
+          <div class="sf-dbox d">
+            <div class="sf-dl">🔴 PII — Agent에 영구 차단</div>
+            <span class="sf-tp">홍길동 · 900101-1234567 · 급성 편도염 · 좋은이비인후과 · 김영희</span>
+          </div>
+          <div class="sf-dbox p" style="margin-top:10px">
+            <div class="sf-dl">🟢 앞단 수집 일반 데이터 (패스스루 + 검증값) — 범주화와 함께 페이로드 조립</div>
+            <span class="sf-tg">// 패스스루 (OCR 추출 · 비PII 원본)</span><br>
+            신청금액: <span class="sf-tg">48,500</span><br>
+            진료일: <span class="sf-tg">2026-04-10</span><br>
+            비급여금액: <span class="sf-tg">0</span><br>
+            <br>
+            <span class="sf-tv">// 검증값 (API Adapter 정제 결과)</span><br>
+            병원검증: { 건보등록: <span class="sf-tg">true</span>, 폐업: <span class="sf-tg">false</span> }<span class="sf-td"> ← 건보 API</span><br>
+            본인한도: <span class="sf-tg">200,000</span> · 가족통합한도: <span class="sf-tg">300,000</span><span class="sf-td"> ← SAP ERP</span><br>
+            수진자관계: <span class="sf-tv">"배우자"</span><span class="sf-td"> ← 복지온 HR</span><br>
+            신청이력: <span class="sf-td">← 이력 DB (진단명은 위에서 범주화)</span><br>
+            &nbsp;{진료일:<span class="sf-tg">2026-01-08</span>, 진단:<span class="sf-tp">치아교정</span>→<span class="sf-tc">치과일반</span>, 수진자:<span class="sf-tv">자녀</span>, 금액:<span class="sf-tg">55,000</span>}<br>
+            &nbsp;{진료일:<span class="sf-tg">2026-03-15</span>, 진단:<span class="sf-tp">급성인두염</span>→<span class="sf-tc">상기도감염</span>, 수진자:<span class="sf-tv">본인</span>, 금액:<span class="sf-tg">32,000</span>}<br>
+            &nbsp;{진료일:<span class="sf-tg">2026-04-10</span>, 진단:<span class="sf-tp">급성편도염</span>→<span class="sf-tc">상기도감염</span>, 수진자:<span class="sf-tv">본인</span>, 금액:<span class="sf-tg">10,000</span>}
+          </div>
+        </div></div>
+      </div>
+    </div>
+    <div class="sf-col-mid">
+      <div class="sf-arrow-cell" style="min-height:120px">
+        <div class="sf-arr to-agent" style="font-size:24px">→</div>
+        <div class="sf-arr-lbl" style="color:var(--sf-scz)">전체 페이로드<br>한번에 반환</div>
+      </div>
+    </div>
+    <div class="sf-col-agent">
+      <div class="sf-card ag" onclick="sfTog('sf-e1r')">
+        <div class="sf-card-head">
+          <div class="sf-ci" style="background:var(--sf-agent-dim)">📦</div>
+          <div><div class="sf-cn">최종 페이로드 수신</div><div class="sf-cs">PII 없음 · 범주화 태그 + 검증값 + 패스스루</div></div>
+          <span class="sf-cb ag">AGENT</span>
+        </div>
+        <div class="sf-card-body open" id="sf-e1r"><div class="sf-cbi">
+          <div class="sf-dbox" style="border-color:var(--sf-warn-border)">
+            <div class="sf-dl">← 수신 JSON (PII 없음)</div>
+            <span class="sf-tc">// 🟡 범주화 태그</span><br>
+            <span class="sf-tc">"진단카테고리"</span>: <span class="sf-tc">"상기도감염"</span><br>
+            <span class="sf-tc">"의료기관유형"</span>: <span class="sf-tc">"외래-일반"</span><br>
+            <br>
+            <span class="sf-tv">// 🟢 검증값</span><br>
+            <span class="sf-tv">"병원검증"</span>: {건보:<span class="sf-tg">true</span>, 폐업:<span class="sf-tg">false</span>}<br>
+            <span class="sf-tv">"수진자관계"</span>: <span class="sf-tv">"배우자"</span><br>
+            <span class="sf-tv">"본인한도"</span>: <span class="sf-tv">200,000</span><br>
+            <span class="sf-tv">"가족통합한도"</span>: <span class="sf-tv">300,000</span><br>
+            <span class="sf-tv">"신청이력"</span>: [<br>
+            &nbsp;{<span class="sf-tg">01-08</span>, <span class="sf-tc">치과일반</span>, <span class="sf-tv">자녀</span>, <span class="sf-tg">55,000</span>}<br>
+            &nbsp;{<span class="sf-tg">03-15</span>, <span class="sf-tc">상기도감염</span>, <span class="sf-tv">본인</span>, <span class="sf-tg">32,000</span>}<br>
+            &nbsp;{<span class="sf-tg">04-10</span>, <span class="sf-tc">상기도감염</span>, <span class="sf-tv">본인</span>, <span class="sf-tg">10,000</span>}<br>
+            ]<br>
+            <br>
+            <span class="sf-tg">// 🟢 패스스루</span><br>
+            <span class="sf-tg">"신청금액"</span>: <span class="sf-tg">48,500</span><br>
+            <span class="sf-tg">"진료일"</span>: <span class="sf-tg">"2026-04-10"</span><br>
+            <span class="sf-tg">"비급여금액"</span>: <span class="sf-tg">0</span><br>
+            <br>
+            <span class="sf-tp">// 🔴 없음: 이름·주민번호·진단명원문·병원명</span>
+          </div>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- ═══════ PHASE 4 ═══════ -->
+    <div class="sf-phase">
+      <div class="sf-pn" style="background:var(--sf-agent-dim);color:var(--sf-agent);border:1px solid var(--sf-agent-border)">4</div>
+      Agent 판단 — 범주값 조합 해석 · 5가지 로직 · 최종 결정
+    </div>
+
+    <div class="sf-col-scz"><div class="sf-empty"><span>Agent 판단 대기 중…</span></div></div>
+    <div class="sf-col-mid">
+      <div class="sf-arrow-cell" style="min-height:80px"></div>
+    </div>
+    <div class="sf-col-agent">
+      <div class="sf-card ag" onclick="sfTog('sf-g1')">
+        <div class="sf-card-head">
+          <div class="sf-ci" style="background:var(--sf-agent-dim)">🤖</div>
+          <div><div class="sf-cn">⑨ Agent 판단</div><div class="sf-cs">범주값 조합 해석 · 시스템 직접 접근 없음</div></div>
+          <span class="sf-cb ag">AGENT</span>
+        </div>
+        <div class="sf-card-body open" id="sf-g1"><div class="sf-cbi">
+          <div class="sf-jdg"><div class="sf-jc">✓</div>
+            <div><span class="sf-jl">① 한도 계산 — 본인/가족 한도 별도 적용</span>
+              <span style="font-size:9.5px;font-family:var(--sf-mono);color:var(--sf-dim);display:block;margin-top:3px;line-height:1.9">
+                <span class="sf-tv">본인 한도</span>: 이력② <span class="sf-tg">32,000</span> + 이력③ <span class="sf-tg">10,000</span> = <span class="sf-tg">42,000</span> ≤ <span class="sf-tv">200,000</span> ✓<br>
+                <span class="sf-tc">가족 통합 한도</span>: 이력① <span class="sf-tg">55,000</span> + 신규 <span class="sf-tg">48,500</span> = <span class="sf-tg">103,500</span> ≤ <span class="sf-tc">300,000</span> ✓<br>
+                <span class="sf-td">// 수진자관계(배우자) → 가족 통합 한도 적용</span>
+              </span>→ <span class="sf-tg">양쪽 한도 이내</span>
+            </div>
+          </div>
+          <div class="sf-jdg"><div class="sf-jc">✓</div>
+            <div><span class="sf-jl">② 급여성 판단</span><span class="sf-tc">상기도감염</span> + 비급여 <span class="sf-tg">0</span> + <span class="sf-tc">외래-일반</span> → <span class="sf-tg">전액 급여 대상</span></div>
+          </div>
+          <div class="sf-jdg"><div class="sf-jc">✓</div>
+            <div><span class="sf-jl">③ 중복 판별</span>
+              <span style="font-size:9.5px;font-family:var(--sf-mono);color:var(--sf-dim);display:block;margin-top:3px;line-height:1.8">
+                현재: <span class="sf-tc">상기도감염</span>·04-10·<span class="sf-tv">배우자</span><br>
+                ①: <span class="sf-tc">치과일반</span>·01-08·<span class="sf-tv">자녀</span> → 카테고리+수진자 상이 ✓<br>
+                ②: <span class="sf-tc">상기도감염</span>·03-15·<span class="sf-tv">본인</span> → 수진자 상이 ✓<br>
+                ③: <span class="sf-tc">상기도감염</span>·04-10·<span class="sf-tv">본인</span> → 수진자 상이 ✓
+              </span>→ <span class="sf-tg">중복 없음</span>
+            </div>
+          </div>
+          <div class="sf-jdg"><div class="sf-jc">✓</div>
+            <div><span class="sf-jl">④ 가족정책 분기</span><span class="sf-tv">배우자</span> → <span class="sf-tg">가족 의료비 정책 적용</span></div>
+          </div>
+          <div class="sf-jdg"><div class="sf-jc">✓</div>
+            <div><span class="sf-jl">⑤ 병원 실존</span>건보 <span class="sf-tg">true</span> · 폐업 <span class="sf-tg">false</span> → <span class="sf-tg">정상 기관</span></div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+
+    <!-- ═══════ PHASE 5 ═══════ -->
+    <div class="sf-phase">
+      <div class="sf-pn" style="background:var(--sf-pass-dim);color:var(--sf-pass);border:1px solid var(--sf-pass-border)">5</div>
+      최종 처리 — 자연어 응답 생성 → SCZ 최종 액션 실행 (복지온·이력·알림)
+    </div>
+
+    <div class="sf-col-scz"><div class="sf-empty"><span>Agent 응답 생성 대기 중…</span></div></div>
+    <div class="sf-col-mid">
+      <div class="sf-arrow-cell" style="min-height:100px">
+        <div class="sf-arr to-scz">←</div>
+        <div class="sf-arr-lbl" style="color:var(--sf-agent)">최종 액션<br>실행 요청</div>
+      </div>
+    </div>
+    <div class="sf-col-agent">
+      <div class="sf-card ps" onclick="sfTog('sf-h1r')">
+        <div class="sf-card-head">
+          <div class="sf-ci" style="background:var(--sf-pass-dim)">🎯</div>
+          <div><div class="sf-cn">⑩ 최종 액션 스킬 호출 + 응답 생성</div><div class="sf-cs">welfareon_update · evidence_transfer · notify · audit_log 스킬 실행 요청 + PII 미포함 자연어 응답</div></div>
+          <span class="sf-cb ps">AGENT</span>
+        </div>
+        <div class="sf-card-body open" id="sf-h1r"><div class="sf-cbi">
+          <div class="sf-final-resp">
+            수진자는 <strong>배우자</strong>로 가족 의료비 정책이 적용됩니다.<br>
+            해당 의료기관 건강보험 등록 확인, 폐업 이력 없습니다.<br>
+            <strong>상기도감염(외래-일반)</strong>은 비급여 0원, 전액 급여 대상입니다.<br>
+            이력 3건 확인 — 중복 없음.<br>
+            본인 한도: 42,000 / 200,000원 사용 ✓<br>
+            가족 통합 한도: 103,500 / 300,000원 사용 ✓<br><br>
+            ✅ <strong>정상 승인 처리되었습니다.</strong><br>
+            <span style="color:var(--sf-scz);font-family:var(--sf-mono);font-size:9.5px">MED-2604-0892 · 가족 통합 잔여 196,500원</span>
+          </div>
+          <div class="sf-dbox d">
+            <div class="sf-dl">🔴 끝까지 차단 — 응답에 미포함</div>
+            <span class="sf-tp">홍길동 · 900101-1234567 · 급성 편도염 · 좋은이비인후과 · 김영희</span>
+          </div>
+        </div></div>
+      </div>
+    </div>
+
+    <div class="sf-col-scz">
+      <div class="sf-card sc" onclick="sfTog('sf-h1')">
+        <div class="sf-card-head">
+          <div class="sf-ci" style="background:var(--sf-scz-dim)">⚡</div>
+          <div><div class="sf-cn">⑪ SCZ 최종 액션 실행</div><div class="sf-cs">복지온 반영 · 증빙이력 · 검증이력 · 알림</div></div>
+          <span class="sf-cb sc">SCZ</span>
+        </div>
+        <div class="sf-card-body open" id="sf-h1"><div class="sf-cbi">
+          <div class="sf-adp">
+            <div class="sf-adp-c">
+              <div class="sf-adp-t">🏥 복지온 관리자 반영</div>
+              <div class="sf-adp-r"><span class="sf-adp-k">상태</span><span class="sf-adp-v">승인완료</span></div>
+              <div class="sf-adp-r"><span class="sf-adp-k">신청번호</span><span class="sf-adp-v">MED-2604-0892</span></div>
+              <div class="sf-adp-r"><span class="sf-adp-k">수진자관계</span><span class="sf-adp-v">배우자</span></div>
+              <div class="sf-adp-r"><span class="sf-adp-k">본인 잔여</span><span class="sf-adp-v">158,000원</span></div>
+              <div class="sf-adp-r"><span class="sf-adp-k">가족 잔여</span><span class="sf-adp-v">196,500원</span></div>
+            </div>
+            <div class="sf-adp-c">
+              <div class="sf-adp-t">📎 복지온 증빙이력 전송</div>
+              <div class="sf-adp-r"><span class="sf-adp-k">OCR 원본</span><span class="sf-adp-v">암호화 전송</span></div>
+              <div class="sf-adp-r"><span class="sf-adp-k">증빙파일</span><span class="sf-adp-v">img_001~002</span></div>
+              <div class="sf-adp-r"><span class="sf-adp-k">신청번호</span><span class="sf-adp-v">MED-2604-0892</span></div>
+              <div style="font-size:8px;color:var(--sf-dim);margin-top:3px">원본 PII 포함 · 복지온 접근통제</div>
+            </div>
+            <div class="sf-adp-c">
+              <div class="sf-adp-t">📬 사내 알림 발송</div>
+              <div class="sf-adp-r"><span class="sf-adp-k">채널</span><span class="sf-adp-v">사내 메신저</span></div>
+              <div class="sf-adp-r"><span class="sf-adp-k">수신자</span><span class="sf-adp-v">신청자</span></div>
+              <div class="sf-adp-r"><span class="sf-adp-k">내용</span><span class="sf-adp-v">승인완료 안내</span></div>
+            </div>
+            <div class="sf-adp-c">
+              <div class="sf-adp-t">🔍 검증 이력 저장</div>
+              <div class="sf-adp-r"><span class="sf-adp-k">건보·ERP·HR</span><span class="sf-adp-v">결과 로그</span></div>
+              <div class="sf-adp-r"><span class="sf-adp-k">PII 마스킹</span><span class="sf-adp-v">탐지 로그</span></div>
+              <div class="sf-adp-r"><span class="sf-adp-k">범주화 결과</span><span class="sf-adp-v">Audit Log</span></div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+    <div class="sf-col-mid">
+      <div class="sf-arrow-cell" style="min-height:100px">
+        <div class="sf-arr to-agent">→</div>
+        <div class="sf-arr-lbl" style="color:var(--sf-scz)">처리 완료<br>반환</div>
+      </div>
+    </div>
+    <div class="sf-col-agent"><div class="sf-empty"><span>SCZ 액션 완료 대기…</span></div></div>
+
+    <div style="grid-column:1/-1;height:40px"></div>
+
+  </div><!-- /sf-swim -->
+  </div><!-- /sf-swim-wrap -->
+
 </section>
+
+
+<!-- ═══════════════════════════════════════════════════
+     REMOVED OLD: 실행 주체별 역할 / 스윔레인 흐름도 / 듀얼 레인 / 상세 15단계
+     REPLACED WITH: harness-swimlane_7.html 스윔레인 데이터 흐름
+════════════════════════════════════════════════════════ -->
 
 
 <!-- ═══════════════════════════════════════════════════
@@ -1029,13 +1440,27 @@ ul.clean li{margin:6px 0}
     <div class="recipe-card">
       <div class="recipe-head"><div class="recipe-name">🏥 의료비 신청</div><div class="status-chip">구조 예시 (미확정)</div></div>
       <div class="flow-lane" style="margin-bottom:10px">
-        <div class="flow-pill recipe">증빙 수신</div><div class="flow-connector">→</div><div class="flow-pill skill">OCR</div><div class="flow-connector">→</div><div class="flow-pill skill">중복·한도 확인</div><div class="flow-connector">→</div><div class="flow-pill decision">결과 안내</div>
+        <div class="flow-pill recipe">증빙 수신</div><div class="flow-connector">→</div><div class="flow-pill skill">OCR</div><div class="flow-connector">→</div><div class="flow-pill skill">조회·범주화</div><div class="flow-connector">→</div><div class="flow-pill decision">Agent 판단</div>
       </div>
       <div class="mini-list">
         <div class="mini-item"><span>•</span><span><b>목적</b> 의료비 지급 가능 여부와 후속 처리 판단</span></div>
-        <div class="mini-item"><span>•</span><span><b>대표 스킬</b> OCR / ERP 조회 / 검증·이상탐지 / 포맷</span></div>
-        <div class="mini-item"><span>•</span><span><b>통제 포인트</b> 급여성 여부, 중복 신청, 한도 초과, PII 범주화</span></div>
+        <div class="mini-item"><span>•</span><span><b>대표 스킬</b> OCR / ERP 조회 / HR 조회 / 건보 API / 이력DB</span></div>
+        <div class="mini-item"><span>•</span><span><b>Agent 판단 영역</b> 급여성, 중복 여부, 한도 초과, 가족정책 분기</span></div>
         <div class="mini-item"><span>•</span><span><b>사용자 응답 예시</b> 지급 가능 / 추가서류 요청 / 반려 사유 안내</span></div>
+      </div>
+      <div style="margin-top:10px;padding:10px 12px;border-radius:8px;background:rgba(13,27,42,.6);border:1px solid rgba(26,58,92,.4)">
+        <div style="font-size:10px;font-weight:800;color:var(--accent);margin-bottom:6px;letter-spacing:.4px">DATA POLICY</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:10px">
+          <div style="padding:4px 8px;border-radius:4px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);color:#f87171">
+            <strong>🔴 마스킹</strong><br>신청자명, 주민번호
+          </div>
+          <div style="padding:4px 8px;border-radius:4px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.25);color:#fbbf24">
+            <strong>🟡 범주화</strong><br>진단명→진단카테고리<br>병원명→의료기관유형
+          </div>
+          <div style="padding:4px 8px;border-radius:4px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.25);color:#34d399">
+            <strong>🟢 패스스루</strong><br>신청금액, 비급여금액<br>잔여한도, 수진자관계<br>병원검증, 신청이력
+          </div>
+        </div>
       </div>
     </div>
     <div class="recipe-card">
@@ -1189,7 +1614,7 @@ ul.clean li{margin:6px 0}
 <section id="tab-categ" class="section">
   <div class="categ-header">
     <h2>민감정보 범주화 엔진 설계</h2>
-    <p>PII를 AI 모델에 노출하지 않고 범주값으로 변환하는 3단계 파이프라인</p>
+    <p>SCZ = 데이터 조회 + PII 제거 + 민감정보 범주화 &nbsp;|&nbsp; Agent = 모든 판단</p>
   </div>
 
   <div class="categ-main">
@@ -1213,7 +1638,7 @@ ul.clean li{margin:6px 0}
       </div>
       <div class="ratio-legends">
         <div class="ratio-legend"><div class="ratio-dot" style="background:#2563eb"></div>룰 + NER 하이브리드 마스킹 — 룰 즉시 처리, NER 잔여 탐지</div>
-        <div class="ratio-legend"><div class="ratio-dot" style="background:#059669"></div>스키마 + DB 조회 — 대부분의 범주 결정</div>
+        <div class="ratio-legend"><div class="ratio-dot" style="background:#059669"></div>사내시스템 조회 — 수치·구조를 Agent에 패스스루</div>
         <div class="ratio-legend"><div class="ratio-dot" style="background:#a78bfa"></div>규정 룰 매칭 — 조건-결과 쌍으로 즉시 판단 (CPU)</div>
         <div class="ratio-legend"><div class="ratio-dot" style="background:#7c3aed"></div>RAG + sLM 판단 — 진짜 모호한 엣지케이스만 (GPU)</div>
       </div>
@@ -1232,9 +1657,9 @@ ul.clean li{margin:6px 0}
       <div class="categ-stage" style="--stage-color:#3b82f6" onclick="categToggle(1)">
         <div class="categ-stage-num">STEP 2</div>
         <div class="categ-stage-icon">📋</div>
-        <div class="categ-stage-title">스키마 룰<br>+ DB 조회</div>
-        <div class="categ-stage-sub">레시피별 체크리스트<br>사내 시스템 조회</div>
-        <div class="categ-stage-badge">70~80% 해결</div>
+        <div class="categ-stage-title">사내시스템<br>조회</div>
+        <div class="categ-stage-sub">ERP·HR·건보·이력DB<br>조회만, 판단은 Agent</div>
+        <div class="categ-stage-badge">패스스루</div>
       </div>
       <div class="categ-arrow"><svg width="20" height="20" viewBox="0 0 20 20"><path d="M7 10h8M12 7l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></div>
       <div class="categ-stage" style="--stage-color:#8b5cf6" onclick="categToggle(2)">
@@ -1284,31 +1709,33 @@ ul.clean li{margin:6px 0}
           <div class="categ-detail-card-title">Tier A 입력 (원본)</div>
           <div class="categ-code"><span class="r">홍길동</span> / <span class="r">900101-1234567</span>
 진단명: <span class="r">급성 편도염</span>
+병원: <span class="r">서울강남 좋은이비인후과</span>
 청구금액: 48,500원  <span class="c">← 비민감</span>
-진료유형: 외래
+비급여금액: 0원  <span class="c">← 비민감</span>
 신청일: 2026-04-07</div>
         </div>
         <!-- Tier A 예시: 출력 -->
         <div class="categ-detail-card">
           <div class="categ-detail-card-title">Tier A 출력 (룰 탐지 성공)</div>
           <div class="categ-code"><span class="s">[PERSON]</span> / <span class="s">[SSN]</span>  <span class="c">← 사전·정규식 탐지</span>
-진단카테고리: <span class="v">상기도감염</span>  <span class="c">← KCD 매핑</span>
-청구금액: <span class="v">48,500</span>원  <span class="c">← 그대로</span>
-진료유형: <span class="v">외래</span>  <span class="c">← 그대로</span>
-신청일: <span class="v">2026-04-07</span>  <span class="c">← 그대로</span>
+진단카테고리: <span class="v">상기도감염</span>  <span class="c">← 🟡 KCD 범주화</span>
+의료기관유형: <span class="v">외래-일반</span>  <span class="c">← 🟡 병원명 범주화</span>
+청구금액: <span class="v">48,500</span>원  <span class="c">← 🟢 패스스루</span>
+비급여금액: <span class="v">0</span>원  <span class="c">← 🟢 패스스루</span>
+신청일: <span class="v">2026-04-07</span>  <span class="c">← 🟢 패스스루</span>
 
-<span class="c">✓ 모든 PII 탐지 완료 → Tier B 생략</span></div>
+<span class="c">✓ PII + 민감정보 탐지 완료 → Tier B 생략</span></div>
         </div>
         <!-- Tier B 예시: 입력 (Tier A 실패 케이스) -->
         <div class="categ-detail-card">
           <div class="categ-detail-card-title">Tier B 입력 (Tier A가 놓친 경우)</div>
           <div class="categ-code"><span class="c"># Tier A 처리 후 잔여 텍스트에 PII 의심</span>
-<span class="c"># 예: 비등록 인명, 주소, 기관명</span>
+<span class="c"># 예: 비등록 인명, 비정형 기관명</span>
 
 <span class="s">[PERSON]</span> / <span class="s">[SSN]</span>
 진단카테고리: <span class="v">상기도감염</span>
+의료기관유형: <span class="r">[미탐지]</span>  <span class="c">← 병원명 사전 미등록</span>
 청구금액: <span class="v">48,500</span>원
-병원: <span class="r">서울 강남 좋은이비인후과</span>  <span class="c">← 미탐지</span>
 비고: <span class="r">김영희 대리 가족</span>  <span class="c">← 미탐지</span></div>
         </div>
         <!-- Tier B 예시: 출력 -->
@@ -1316,9 +1743,9 @@ ul.clean li{margin:6px 0}
           <div class="categ-detail-card-title">Tier B 출력 (NER 보강 탐지)</div>
           <div class="categ-code"><span class="s">[PERSON]</span> / <span class="s">[SSN]</span>
 진단카테고리: <span class="v">상기도감염</span>
-청구금액: <span class="v">48,500</span>원
-병원: <span class="s">[ORG]</span>  <span class="c">← NER이 기관명 탐지</span>
-비고: <span class="s">[PERSON]</span> 대리 가족  <span class="c">← NER이 인명 탐지</span>
+의료기관유형: <span class="v">외래-일반</span>  <span class="c">← NER이 기관명 탐지 → 🟡 범주화</span>
+청구금액: <span class="v">48,500</span>원  <span class="c">← 🟢 패스스루</span>
+비고: <span class="s">[PERSON]</span> 대리 가족  <span class="c">← NER이 인명 탐지 → 🔴 마스킹</span>
 
 <span class="c">✓ Tier A 미탐지 → NER 모델이 문맥으로 보강</span></div>
         </div>
@@ -1343,7 +1770,12 @@ ul.clean li{margin:6px 0}
           <div class="categ-flow-row">
             <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">진단명</span>
             <span class="categ-flow-arrow">→</span>
-            <span class="categ-flow-note">KCD 코드 → 카테고리 치환</span>
+            <span class="categ-flow-note">KCD 코드 → 진단카테고리 치환</span>
+          </div>
+          <div class="categ-flow-row">
+            <span class="categ-flow-chip" style="background:#78350f22;color:#f59e0b">병원명</span>
+            <span class="categ-flow-arrow">→</span>
+            <span class="categ-flow-note">병원명 → 의료기관유형(외래-일반/입원-종합 등) 치환</span>
           </div>
         </div>
         <!-- Tier B NER 탐지 대상 -->
@@ -1436,80 +1868,86 @@ ul.clean li{margin:6px 0}
     <div class="categ-detail" id="cd1">
       <div class="categ-detail-header">
         <span style="font-size:20px">📋</span>
-        <span class="categ-detail-title">STEP 2 — 스키마 룰 + DB 조회</span>
-        <span class="categ-detail-tag" style="background:#1e3a5f22;color:#3b82f6;border:1px solid #1e3a5f55">전체 케이스 70~80% 처리</span>
+        <span class="categ-detail-title">STEP 2 — 사내시스템 조회 + 패스스루</span>
+        <span class="categ-detail-tag" style="background:#1e3a5f22;color:#3b82f6;border:1px solid #1e3a5f55">조회만 수행 · 판단은 Agent에게</span>
       </div>
       <div class="categ-detail-grid">
         <!-- STEP 1에서 넘어온 입력 -->
         <div class="categ-detail-card">
-          <div class="categ-detail-card-title">입력 (STEP 1 마스킹 결과)</div>
-          <div class="categ-code" style="font-size:10px"><span class="c"># 홍길동 의료비 신청 — STEP 1 출력 그대로</span>
+          <div class="categ-detail-card-title">입력 (STEP 1 마스킹·범주화 결과 + 사번)</div>
+          <div class="categ-code" style="font-size:10px"><span class="c"># STEP 1에서 PII 제거·범주화 완료</span>
 {
-  <span class="k">"진단카테고리"</span>: <span class="v">"상기도감염"</span>,
-  <span class="k">"청구금액"</span>: <span class="v">48500</span>,
-  <span class="k">"진료유형"</span>: <span class="v">"외래"</span>,
-  <span class="k">"신청일"</span>: <span class="v">"2026-04-07"</span>,
-  <span class="k">"사번"</span>: <span class="v">"EMP-20145"</span>,
-  <span class="k">"신청해시"</span>: <span class="v">"a3f7c9..."</span>
+  <span class="k">"진단카테고리"</span>: <span class="v">"상기도감염"</span>,  <span class="c">← 🟡 범주화</span>
+  <span class="k">"의료기관유형"</span>: <span class="v">"외래-일반"</span>,  <span class="c">← 🟡 범주화</span>
+  <span class="k">"신청금액"</span>: <span class="v">48500</span>,        <span class="c">← 🟢 패스스루</span>
+  <span class="k">"비급여금액"</span>: <span class="v">0</span>,           <span class="c">← 🟢 패스스루</span>
+  <span class="k">"사번"</span>: <span class="v">"EMP-20145"</span>       <span class="c">← 조회 키</span>
 }
 
-<span class="c"># PII는 이미 제거됨 — 코드값만 사용</span></div>
+<span class="c"># 사번으로 사내시스템 조회 수행</span></div>
         </div>
         <!-- DB 조회 결과 -->
         <div class="categ-detail-card">
-          <div class="categ-detail-card-title">출력 (DB 조회 결과)</div>
-          <div class="categ-code" style="font-size:10px"><span class="c"># 4건 조회 → 모두 Y/N으로 즉시 확정</span>
+          <div class="categ-detail-card-title">출력 (조회 결과 → Agent에 패스스루)</div>
+          <div class="categ-code" style="font-size:10px"><span class="c"># SCZ는 조회만 — 판단은 Agent가 수행</span>
 {
-  <span class="k">"한도초과"</span>: <span class="v">"N"</span>,
-  <span class="k">"가족포함"</span>: <span class="v">"Y"</span>,
-  <span class="k">"중복신청"</span>: <span class="v">"N"</span>,
-  <span class="k">"미해결"</span>: [<span class="p">"지급대상여부"</span>]
+  <span class="k">"잔여한도"</span>: <span class="v">451500</span>,       <span class="c">← 🟢 ERP 조회</span>
+  <span class="k">"수진자관계"</span>: <span class="v">"배우자"</span>,    <span class="c">← 🟢 HR 조회 (이름 제거)</span>
+  <span class="k">"병원검증"</span>: {               <span class="c">← 🟢 건보 API</span>
+    <span class="k">"건보등록"</span>: <span class="v">true</span>,
+    <span class="k">"폐업여부"</span>: <span class="v">false</span>
+  },
+  <span class="k">"신청이력"</span>: [<span class="p">...3건</span>]      <span class="c">← 🟢 이력DB (PII 제거)</span>
 }
 
-<span class="c"># 지급대상 판단은 규정 해석 필요</span>
-<span class="c"># → STEP 3으로 이관</span></div>
+<span class="c"># Y/N 판단 없음 — 원본 수치·구조 전달</span></div>
         </div>
         <!-- 조회 상세 -->
         <div class="categ-detail-card" style="grid-column:1/-1">
-          <div class="categ-detail-card-title">의료비 신청 — DB 조회 상세</div>
+          <div class="categ-detail-card-title">의료비 신청 — DB 조회 상세 (조회만, 판단 없음)</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px">
             <div>
-              <div class="categ-flow-row"><span class="categ-flow-chip" style="background:#1e3a5f22;color:#60a5fa">한도 초과?</span></div>
-              <div class="categ-code" style="font-size:10px"><span class="c">입력:</span> 사번 EMP-20145 + 48,500원
-<span class="c">조회:</span> ERP 잔여한도
-<span class="c">결과:</span> <span class="v">N</span> (잔여 451,500원)
-<span class="c">PII:</span> 없음 ✓</div>
+              <div class="categ-flow-row"><span class="categ-flow-chip" style="background:#1e3a5f22;color:#60a5fa">ERP 잔여한도 조회</span></div>
+              <div class="categ-code" style="font-size:10px"><span class="c">입력:</span> 사번 EMP-20145
+<span class="c">조회:</span> ERP 의료비 한도 테이블
+<span class="c">결과:</span> <span class="v">451,500</span>원 (잔여한도)
+<span class="c">전달:</span> 🟢 Agent에 금액 패스스루
+<span class="c">→</span> Agent가 신청금액과 직접 비교</div>
             </div>
             <div>
-              <div class="categ-flow-row"><span class="categ-flow-chip" style="background:#1e3a5f22;color:#60a5fa">가족 포함?</span></div>
+              <div class="categ-flow-row"><span class="categ-flow-chip" style="background:#1e3a5f22;color:#60a5fa">HR 피부양자 조회</span></div>
               <div class="categ-code" style="font-size:10px"><span class="c">입력:</span> 사번 EMP-20145
 <span class="c">조회:</span> HR 피부양자 테이블
-<span class="c">결과:</span> <span class="v">Y</span> (피부양자 등록 확인)
-<span class="c">PII:</span> 없음 ✓</div>
+<span class="c">원본:</span> <span class="r">배우자 김영희(880515-2xxxxxx)</span>
+<span class="c">전달:</span> 🟢 <span class="v">"배우자"</span> (이름·주민번호 제거)
+<span class="c">→</span> Agent가 수진자관계로 정책 분기</div>
             </div>
             <div>
-              <div class="categ-flow-row"><span class="categ-flow-chip" style="background:#1e3a5f22;color:#60a5fa">중복 신청?</span></div>
-              <div class="categ-code" style="font-size:10px"><span class="c">입력:</span> 해시 a3f7c9...
-<span class="c">조회:</span> 이력 DB
-<span class="c">결과:</span> <span class="v">N</span> (기존 이력 없음)
-<span class="c">PII:</span> 없음 ✓</div>
+              <div class="categ-flow-row"><span class="categ-flow-chip" style="background:#1e3a5f22;color:#60a5fa">건보 API 병원검증</span></div>
+              <div class="categ-code" style="font-size:10px"><span class="c">입력:</span> 의료기관 코드 (STEP 1 추출)
+<span class="c">조회:</span> 건강보험심사평가원 API
+<span class="c">결과:</span> <span class="v">건보등록: Y, 폐업: N</span>
+<span class="c">전달:</span> 🟢 Agent에 패스스루
+<span class="c">→</span> Agent가 실존 병원 여부 판단</div>
             </div>
             <div>
-              <div class="categ-flow-row"><span class="categ-flow-chip" style="background:#1e3a5f22;color:#60a5fa">지급대상?</span></div>
-              <div class="categ-code" style="font-size:10px"><span class="c">입력:</span> 진단카테고리 + 항목코드
-<span class="c">조회:</span> 단순 룩업 불가
-<span class="c">결과:</span> <span class="r">미결</span> (규정 해석 필요)
-<span class="c">→</span> STEP 3으로 이관</div>
+              <div class="categ-flow-row"><span class="categ-flow-chip" style="background:#1e3a5f22;color:#60a5fa">이력DB 신청이력 조회</span></div>
+              <div class="categ-code" style="font-size:10px"><span class="c">입력:</span> 사번 EMP-20145
+<span class="c">조회:</span> 의료비 신청 이력 DB
+<span class="c">원본:</span> <span class="r">3건 상세 (이름·주민번호 포함)</span>
+<span class="c">전달:</span> 🟢 이력 3건 (PII 제거, 구조 유지)
+<span class="c">→</span> Agent가 중복 여부 교차 비교</div>
             </div>
           </div>
         </div>
         <div class="categ-detail-card">
-          <div class="categ-detail-card-title">핵심 원칙</div>
+          <div class="categ-detail-card-title">핵심 원칙 — SCZ는 조회만, Agent가 판단</div>
           <div class="categ-flow-note" style="line-height:2">
-            • 조회에 쓰이는 값은 <strong style="color:#60a5fa">코드값·해시·사번</strong><br>
-            • 실제 이름·주민번호는 사용 안 함<br>
-            • Y/N으로 떨어지는 건 여기서 확정, 미결 건만 STEP 3 이관<br>
-            • 레시피마다 스키마를 별도로 정의
+            • 조회에 쓰이는 값은 <strong style="color:#60a5fa">사번·의료기관코드</strong> (PII 아님)<br>
+            • 조회 결과에서 이름·주민번호 등 PII는 제거 후 전달<br>
+            • <strong style="color:#ff8a65">Y/N 판단을 내리지 않음</strong> — 수치·구조를 그대로 Agent에 패스스루<br>
+            • Agent가 금액 비교, 중복 판별, 정책 분기를 직접 수행<br>
+            • 레시피마다 조회 대상 시스템·항목을 별도로 정의
           </div>
         </div>
         <div class="categ-detail-card">
@@ -1679,36 +2117,49 @@ ul.clean li{margin:6px 0}
     <div class="categ-detail" id="cd3">
       <div class="categ-detail-header">
         <span style="font-size:20px">🏷️</span>
-        <span class="categ-detail-title">OUTPUT — Agent에 전달되는 범주값</span>
-        <span class="categ-detail-tag" style="background:#064e3b22;color:#10b981;border:1px solid #064e3b55">PII 없음 · JSON 태그</span>
+        <span class="categ-detail-title">OUTPUT — Agent에 전달되는 최종 데이터</span>
+        <span class="categ-detail-tag" style="background:#064e3b22;color:#10b981;border:1px solid #064e3b55">PII 없음 · 범주화 + 패스스루 혼합</span>
       </div>
       <div class="categ-detail-grid">
-        <div class="categ-detail-card">
-          <div class="categ-detail-card-title">홍길동 의료비 신청 — 최종 범주 태그</div>
-          <div class="categ-code"><span class="c"># STEP 2 DB 조회 결과</span>
-  <span class="k">"한도초과"</span>: <span class="v">"N"</span>,    <span class="c">← STEP 2 ERP 조회</span>
-  <span class="k">"가족포함"</span>: <span class="v">"Y"</span>,    <span class="c">← STEP 2 HR 조회</span>
-  <span class="k">"중복신청"</span>: <span class="v">"N"</span>,    <span class="c">← STEP 2 이력 DB</span>
+        <div class="categ-detail-card" style="grid-column:1/-1">
+          <div class="categ-detail-card-title">홍길동 의료비 신청 — Agent 수신 데이터</div>
+          <div class="categ-code">{
+  <span class="k">"진단카테고리"</span>: <span class="v">"상기도감염"</span>,           <span class="c">← 🟡 STEP 1 범주화</span>
+  <span class="k">"의료기관유형"</span>: <span class="v">"외래-일반"</span>,            <span class="c">← 🟡 STEP 1 범주화</span>
+  <span class="k">"병원검증"</span>: { <span class="k">"건보등록"</span>: <span class="v">true</span>, <span class="k">"폐업여부"</span>: <span class="v">false</span> },  <span class="c">← 🟢 STEP 2 건보 API</span>
+  <span class="k">"수진자관계"</span>: <span class="v">"배우자"</span>,               <span class="c">← 🟢 STEP 2 HR 조회</span>
+  <span class="k">"신청금액"</span>: <span class="p">48500</span>,                   <span class="c">← 🟢 패스스루</span>
+  <span class="k">"비급여금액"</span>: <span class="p">0</span>,                      <span class="c">← 🟢 패스스루</span>
+  <span class="k">"잔여한도"</span>: <span class="p">451500</span>,                  <span class="c">← 🟢 STEP 2 ERP 조회</span>
+  <span class="k">"신청이력"</span>: [                          <span class="c">← 🟢 STEP 2 이력DB</span>
+    { <span class="k">"의료기관유형"</span>: <span class="v">"외래-일반"</span>, <span class="k">"진단카테고리"</span>: <span class="v">"상기도감염"</span>,
+      <span class="k">"금액"</span>: <span class="p">32000</span>, <span class="k">"신청일"</span>: <span class="v">"2026-03-15"</span>, <span class="k">"수진자관계"</span>: <span class="v">"본인"</span> },
+    { <span class="k">"의료기관유형"</span>: <span class="v">"외래-일반"</span>, <span class="k">"진단카테고리"</span>: <span class="v">"치과일반"</span>,
+      <span class="k">"금액"</span>: <span class="p">55000</span>, <span class="k">"신청일"</span>: <span class="v">"2026-01-08"</span>, <span class="k">"수진자관계"</span>: <span class="v">"자녀"</span> },
+    { <span class="k">"의료기관유형"</span>: <span class="v">"사내의료실"</span>, <span class="k">"진단카테고리"</span>: <span class="v">"상기도감염"</span>,
+      <span class="k">"금액"</span>: <span class="p">0</span>, <span class="k">"신청일"</span>: <span class="v">"2026-04-10"</span>, <span class="k">"수진자관계"</span>: <span class="v">"본인"</span> }
+  ]
+}
 
-<span class="c"># STEP 3 규정 룰 판단 결과</span>
-  <span class="k">"지급대상"</span>: <span class="v">"Y"</span>,    <span class="c">← STEP 3 Tier A 룰</span>
-  <span class="k">"판단방식"</span>: <span class="v">"rule"</span>,  <span class="c">← 신뢰도 1.0</span>
-
-<span class="c"># 종합</span>
-  <span class="k">"처리가능"</span>: <span class="v">"Y"</span>
-
-<span class="c"># Agent는 이것만 봄 — 홍길동, 주민번호,</span>
-<span class="c"># 급성 편도염, 좋은이비인후과 모두 없음</span></div>
+<span class="c">// 🔴 Agent에게 전달되지 않는 정보:</span>
+<span class="c">//    홍길동, 900101-1234567, 급성 편도염, 좋은이비인후과, 김영희</span></div>
         </div>
-        <div class="categ-detail-card">
-          <div class="categ-detail-card-title">Agent가 생성하는 응답</div>
-          <div style="background:#04070e;border:1px solid #1a2540;border-radius:6px;padding:12px;font-size:12px;color:#94a3b8;line-height:1.8">
-            의료비 신청이 정상 처리되었습니다.<br>
-            지급 대상 항목으로 확인되었으며<br>
-            가족 피부양자 포함 건입니다.<br>
-            잔여 한도 내 지급 가능합니다.
-            <div style="margin-top:8px;font-size:10px;color:var(--muted)">
-              ← 홍길동, 48,500원, 급성 편도염 없이<br>범주값만으로 자연어 응답 생성
+        <div class="categ-detail-card" style="grid-column:1/-1">
+          <div class="categ-detail-card-title">Agent 종합 판단 (모든 판단을 Agent가 수행)</div>
+          <div style="background:#04070e;border:1px solid #1a2540;border-radius:6px;padding:14px 16px;font-size:12px;color:#94a3b8;line-height:1.9">
+            수진자는 <strong style="color:#34d399">배우자</strong>로 가족 의료비 정책이 적용됩니다.<br>
+            해당 의료기관은 건보 등록 확인, 폐업 이력 없습니다.<br>
+            상기도감염(외래-일반)은 비급여금액 0원으로 <strong style="color:#34d399">전액 급여 대상</strong>입니다.<br>
+            신청금액 <strong style="color:#34d399">48,500원</strong>은 잔여한도 <strong style="color:#34d399">451,500원</strong> 이내입니다.<br>
+            기존 이력 3건 확인 — 동일 카테고리(상기도감염) 건(3/15)은 수진자(본인)·일자 상이, 별건.<br>
+            <strong style="color:#34d399">중복 신청 해당 없음. 정상 승인 처리합니다.</strong>
+            <div style="margin-top:10px;padding:8px 10px;background:rgba(106,27,154,.08);border:1px solid rgba(106,27,154,.2);border-radius:6px;font-size:10px;color:var(--muted);line-height:1.7">
+              ← Agent가 직접 수행한 판단:<br>
+              &nbsp;&nbsp;✓ 금액 비교 (48,500 vs 451,500)<br>
+              &nbsp;&nbsp;✓ 급여성 판단 (진단카테고리 + 비급여금액 + 의료기관유형)<br>
+              &nbsp;&nbsp;✓ 중복 판별 (이력 3건 교차 비교)<br>
+              &nbsp;&nbsp;✓ 가족정책 분기 (수진자관계 = 배우자)<br>
+              &nbsp;&nbsp;✓ 병원 실존 확인 (건보등록 + 폐업여부)
             </div>
           </div>
         </div>
@@ -1723,15 +2174,16 @@ ul.clean li{margin:6px 0}
         <div class="categ-summary-flow">
           <div class="sf-box" style="background:#78350f22;color:#f59e0b;border:1px solid #78350f44">① PII 마스킹<br><span style="font-size:9px;opacity:.7">룰 + NER 하이브리드</span></div>
           <div class="sf-arrow">→</div>
-          <div class="sf-box" style="background:#1e3a5f22;color:#3b82f6;border:1px solid #1e3a5f44">② 스키마 + DB 조회<br><span style="font-size:9px;opacity:.7">70~80% 해결</span></div>
+          <div class="sf-box" style="background:#1e3a5f22;color:#3b82f6;border:1px solid #1e3a5f44">② 사내시스템 조회<br><span style="font-size:9px;opacity:.7">조회만 · 판단은 Agent</span></div>
           <div class="sf-arrow">→</div>
           <div class="sf-box" style="background:#2e106522;color:#8b5cf6;border:1px solid #2e106544">③ 규정 룰 + RAG·sLM<br><span style="font-size:9px;opacity:.7">룰 1차 + RAG·sLM 2차</span></div>
           <div class="sf-arrow">→</div>
           <div class="sf-box" style="background:#064e3b22;color:#10b981;border:1px solid #064e3b44">④ 범주값 태그<br><span style="font-size:9px;opacity:.7">Agent 전달</span></div>
         </div>
         <div style="margin-top:12px;font-size:11px;color:var(--muted);line-height:1.8">
-          PII는 ①에서 이미 제거 (룰 1차 → NER 2차) — ③은 마스킹된 구조체 + 규정 텍스트만 판단<br>
-          ③ Tier B는 RAG로 규정 검색 후 sLM 판단 — 신규 과제는 규정 문서 인제스트만으로 확장<br>
+          <strong style="color:var(--text-bright)">SCZ = 데이터 조회 + PII 제거 + 민감정보 범주화 &nbsp;|&nbsp; Agent = 모든 판단</strong><br>
+          PII는 ①에서 제거 (룰 1차 → NER 2차) — ②는 조회만 수행, Y/N 판단 없이 수치·구조를 Agent에 패스스루<br>
+          ③은 진단카테고리 매핑 불가 시에만 작동 (RAG + sLM) — 신규 과제는 규정 문서 인제스트만으로 확장<br>
           GPU(g6.xlarge / L4) 하나에 NER + sLM 공유 — sLM·임베딩 모델·벡터 DB는 추후 협의
         </div>
       </div>
@@ -1752,7 +2204,7 @@ const DETAIL_DATA = {
   gateway:{icon:'🔀',title:'API Gateway',rows:[['역할','인증·인가·라우팅·기본 로깅'],['권장','rate limiting, request validation, outbound allowlist']]},
   policy:{icon:'🧭',title:'Policy Engine',rows:[['역할','정보 반출 정책, 스킬 호출 정책, 마스킹/차단 정책 집행'],['이점','PII뿐 아니라 대외비/규제데이터까지 같은 프레임으로 제어']]},
   approval:{icon:'✋',title:'Approval Gate',rows:[['역할','고위험 액션 전 승인'],['적용 예','ERP 반영, 외부 발송, 결재 상신'],['결과','승인 결과는 Audit Log에 불변 기록']]},
-  r_medical:{icon:'🏥',title:'의료비 신청 레시피',rows:[['흐름','OCR → 건보/ERP/구성원 조회 → 중복 확인 → 한도 조회 → 이력 등록'],['출력','[한도초과:N][급여성:Y][가족:Y][중복:N]'],['상태','구조 예시 (미확정)']]},
+  r_medical:{icon:'🏥',title:'의료비 신청 레시피',rows:[['흐름','OCR → PII제거·범주화 → ERP/HR/건보/이력 조회 → Agent 판단'],['DATA POLICY','🔴 마스킹: 신청자명, 주민번호 | 🟡 범주화: 진단명→카테고리, 병원명→의료기관유형 | 🟢 패스스루: 금액, 한도, 수진자관계, 이력'],['Agent 판단','급여성, 중복 여부, 한도 초과, 가족정책 분기를 Agent가 직접 수행'],['상태','구조 예시 (미확정)']]},
   r_condolence:{icon:'💐',title:'경조사 신청 레시피',rows:[['흐름','HR 조회 → 규정 RAG 검색 → 계산 → 그룹웨어 결재'],['출력','[직계가족:Y][재직중:Y][지급유형:경조금]'],['상태','구조 예시 (미확정)']]},
   r_voucher:{icon:'🧾',title:'전표 처리 레시피',rows:[['흐름','OCR → ERP 조회 → 이상탐지 → ERP 반영 → 포맷'],['주의','쓰기 액션은 approval 또는 정책 확인 필수'],['상태','구조 예시 (미검토)']]},
   r_new:{icon:'＋',title:'신규 레시피',rows:[['방법','기존 스킬 조합으로 빠르게 추가'],['예시','출장비, 계약서 검토, 비품 신청'],['절차','Ax Tech WG 운영팀 + 업무 부서 공동 승인']]},
@@ -1772,7 +2224,7 @@ const DETAIL_DATA = {
   groupware:{icon:'📬',title:'그룹웨어',rows:[['역할','결재·협업 시스템']]},
   ext_api:{icon:'☁️',title:'외부 API',rows:[['역할','공공 API, OCR, 파트너 시스템'],['권장','allowlist, timeout, retry, circuit breaker']]},
   secrets:{icon:'🔐',title:'Secrets Broker',rows:[['역할','툴별 단기 자격증명 발급'],['이점','하드코딩 제거, read/write 계정 분리']]},
-  pii:{icon:'🛡️',title:'PII 탐지 · 범주화',rows:[['위치','SCZ 내부 마지막 단계 — 반출 직전 마지막 통제'],['동작','탐지 → 마스킹/차단 → 범주화 → Agent 전달'],['원칙','민감정보는 태그화, 일반정보는 원본 전달'],['핵심','이 단계 이후 Agent는 원본 데이터를 받지 않는다']]},
+  pii:{icon:'🛡️',title:'PII 탐지 · 민감정보 범주화',rows:[['위치','SCZ 내부 — 반출 직전 마지막 통제'],['동작','🔴 마스킹: 이름·주민번호 제거 | 🟡 범주화: 진단명→카테고리, 병원→의료기관유형 | 🟢 패스스루: 금액·한도·이력 등 원본 전달'],['원칙','SCZ = 조회 + PII 제거 + 범주화 | Agent = 모든 판단'],['핵심','Agent에게 판단 재료(수치·구조)는 충분히 전달하되, 민감정보만 보호']]},
   suz_deploy:{icon:'🚀',title:'배포 파이프라인',rows:[['역할','SCZ + Agent 환경 양쪽 업데이트 검증 및 배포'],['미결','Agent 환경 배포 개입 범위 논의 중'],['권장','blue-green, rollback, staging']]},
   suz_monitor:{icon:'📊',title:'모니터링·감사',rows:[['역할','SCZ·Agent 양쪽 지표 통합 수집'],['예시','오류율, 토큰 사용량, 지연시간, 품질 지표']]},
   suz_token:{icon:'⚡',title:'토큰 최적화',rows:[['역할','불필요 컨텍스트 감축, 프롬프트 경량화'],['입력','모니터링 결과와 레시피별 추이'],['결과','압축 정책, 프롬프트 경량화 권고, 태그 정보량 조정']]},
@@ -1788,7 +2240,7 @@ const SKILL_NODE = {
 };
 
 const RECIPES = [
-  {name:'의료비 신청',scz:'n-r-medical',skills:['OCR','건보 DB 조회','구성원 확인','중복 확인','한도 조회','이력 등록'],tags:[['한도초과','N'],['급여성','Y'],['가족','Y'],['중복','N']]},
+  {name:'의료비 신청',scz:'n-r-medical',skills:['OCR','건보 DB 조회','구성원 확인','중복 확인','한도 조회','이력 등록'],tags:[['진단카테고리','상기도감염'],['의료기관유형','외래-일반'],['잔여한도','451,500'],['수진자','배우자']]},
   {name:'경조사 신청',scz:'n-r-condolence',skills:['HR 조회','RAG 검색','계산','그룹웨어 결재','포맷'],tags:[['직계가족','Y'],['재직중','Y'],['지급유형','경조금']]},
   {name:'전표 검증',scz:'n-r-voucher',skills:['OCR','ERP 조회','이상탐지','ERP 반영','포맷'],tags:[['금액이상','N'],['계정유효','Y'],['결재권한','Y']]}
 ];
@@ -1868,6 +2320,12 @@ function setupWorkflow(){
   document.addEventListener('visibilitychange',()=>{paused=document.hidden;});
   window.addEventListener('beforeunload',stop);
   start();
+}
+
+// ── 스윔레인 카드 토글 ──
+function sfTog(id){
+  const b=document.getElementById(id);
+  if(b) b.classList.toggle('open');
 }
 
 setupTabs();
