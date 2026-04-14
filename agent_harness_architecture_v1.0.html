@@ -970,13 +970,17 @@ ul.clean li{margin:6px 0}
     <div class="sf-lh mid-h"></div>
     <div class="sf-lh agent">
       <span class="sf-lh-dot" style="background:var(--sf-agent)"></span>Agent — 타 조직
-      <span class="sf-lh-sub">레시피 선택 · 스킬 요청 · 판단</span>
+      <span class="sf-lh-sub">레시피 선택 · 분기 판단 · 최종 응답</span>
     </div>
 
     <!-- ═══════ PHASE 1 ═══════ -->
     <div class="sf-phase">
       <div class="sf-pn" style="background:var(--sf-pass-dim);color:var(--sf-pass);border:1px solid var(--sf-pass-border)">1</div>
       요청 진입 — 파일 업로드 · 레시피 선택 · 범주화 스펙 정의
+    </div>
+
+    <div style="grid-column:1/-1;margin:4px 14px 12px;padding:10px 14px;background:linear-gradient(90deg,var(--sf-agent-dim),var(--sf-scz-dim));border:1px solid var(--sf-agent-border);border-radius:10px;font-size:11px;line-height:1.6">
+      <strong style="color:var(--text-bright)">🔁 Agent 오케스트레이션 루프</strong> — Agent가 레시피 순서대로 스킬을 하나씩 호출 · <span style="color:var(--sf-warn);font-weight:700">모든 스킬 응답은 범주화 훅을 통과</span>한 뒤 Agent 대화 맥락에 누적 · Agent는 누적 맥락 기반으로 다음 스킬 호출 또는 예외 대응 결정
     </div>
 
     <div class="sf-col-scz">
@@ -1032,6 +1036,9 @@ ul.clean li{margin:6px 0}
               → 이 지시문 하나로 하네스 전체 워크플로가 세팅되고 실행됨
             </div>
           </div>
+          <div style="margin-top:4px;font-size:9.5px;color:var(--text-bright);font-weight:600;line-height:1.7">
+            실행 방식: <span style="color:var(--sf-agent)">Agent가 레시피 순서대로 스킬 호출</span> · <span style="color:var(--sf-warn)">매 응답은 범주화 훅 통과</span> · <span class="sf-td">실패·모호도 Agent가 직접 판단해 다음 액션 결정</span>
+          </div>
           <div class="sf-dbox s">
             <div class="sf-dl">🧩 등록된 스킬 (실행 단위 에셋)</div>
             <span class="sf-tg">ocr</span> · <span class="sf-tg">nhis_verify</span> · <span class="sf-tg">erp_limit</span> · <span class="sf-tg">hr_relation</span><br>
@@ -1044,18 +1051,19 @@ ul.clean li{margin:6px 0}
     </div>
     <div class="sf-col-mid">
       <div class="sf-arrow-cell" style="gap:8px">
-        <div class="sf-arr to-agent" style="font-size:16px">→</div>
-        <div class="sf-arr-lbl" style="color:var(--sf-scz)">레시피 조회</div>
-        <div style="width:1px;height:10px;background:var(--sf-border);z-index:1;position:relative"></div>
         <div class="sf-arr to-scz" style="font-size:16px">←</div>
-        <div class="sf-arr-lbl" style="color:var(--sf-agent)">실행 요청</div>
+        <div class="sf-arr-lbl" style="color:var(--sf-agent)">레시피 조회</div>
+        <div style="width:1px;height:10px;background:var(--sf-border);z-index:1;position:relative"></div>
+        <div class="sf-arr to-agent" style="font-size:16px">→</div>
+        <div class="sf-arr-lbl" style="color:var(--sf-scz)">레시피 응답</div>
       </div>
     </div>
     <div class="sf-col-agent">
+      <div style="height:155px" aria-hidden="true"></div>
       <div class="sf-card ag" onclick="sfTog('sf-b')">
         <div class="sf-card-head">
           <div class="sf-ci" style="background:var(--sf-agent-dim)">🗺️</div>
-          <div><div class="sf-cn">② 레시피 기반 플래닝</div><div class="sf-cs">스킬 실행 계획 수립 · categorization_spec 정의 · SCZ 실행 위임</div></div>
+          <div><div class="sf-cn">② Agent 오케스트레이터 기동</div><div class="sf-cs">레시피 로드 · categorization_spec 확정 · 단일 세션에서 스킬 루프 시작</div></div>
           <span class="sf-cb ag">AGENT</span>
         </div>
         <div class="sf-card-body open" id="sf-b"><div class="sf-cbi">
@@ -1095,11 +1103,11 @@ ul.clean li{margin:6px 0}
     <!-- ═══════ PHASE 2 ═══════ -->
     <div class="sf-phase">
       <div class="sf-pn" style="background:var(--sf-scz-dim);color:var(--sf-scz);border:1px solid var(--sf-scz-border)">2</div>
-      SCZ 내부 실행 — 레시피 스킬 순차 실행 · Agent 대기
+      Agent ↔ SCZ 스킬 루프 — 매 스킬 호출·응답이 범주화 훅을 통과하여 Agent 맥락에 누적
     </div>
 
     <div class="sf-col-scz">
-      <div class="sf-card sc" onclick="sfTog('sf-c1')">
+      <div class="sf-card sc" onclick="sfTog('sf-c1')" style="min-height:285px">
         <div class="sf-card-head">
           <div class="sf-ci" style="background:var(--sf-scz-dim)">🔡</div>
           <div><div class="sf-cn">③ OCR 스킬</div><div class="sf-cs">이미지 → 구조화 텍스트 · PII 첫 출현</div></div>
@@ -1114,11 +1122,11 @@ ul.clean li{margin:6px 0}
             수진자: <span class="sf-tp">김영희</span><br>
             진료일: <span class="sf-tg">2026-04-10</span><br>
             금액: <span class="sf-tg">48,500</span> · 비급여: <span class="sf-tg">0</span><br>
-            신뢰도: <span class="sf-tg">0.97</span>
+            사업자관리번호: <span class="sf-tg">123-45-67890</span>
           </div>
         </div></div>
       </div>
-      <div class="sf-card sc" onclick="sfTog('sf-c2')">
+      <div class="sf-card sc" onclick="sfTog('sf-c2')" style="min-height:190px">
         <div class="sf-card-head">
           <div class="sf-ci" style="background:var(--sf-scz-dim)">🏥</div>
           <div><div class="sf-cn">④ 건보 API + Adapter</div><div class="sf-cs">병원 실존·폐업 여부 검증</div></div>
@@ -1132,7 +1140,7 @@ ul.clean li{margin:6px 0}
           </div>
         </div></div>
       </div>
-      <div class="sf-card sc" onclick="sfTog('sf-c3')">
+      <div class="sf-card sc" onclick="sfTog('sf-c3')" style="min-height:140px">
         <div class="sf-card-head">
           <div class="sf-ci" style="background:var(--sf-scz-dim)">💰</div>
           <div><div class="sf-cn">⑤ SAP ERP 조회 + Adapter</div><div class="sf-cs">연간 의료비 한도 조회</div></div>
@@ -1146,7 +1154,7 @@ ul.clean li{margin:6px 0}
           </div>
         </div></div>
       </div>
-      <div class="sf-card sc" onclick="sfTog('sf-c4')">
+      <div class="sf-card sc" onclick="sfTog('sf-c4')" style="min-height:140px">
         <div class="sf-card-head">
           <div class="sf-ci" style="background:var(--sf-scz-dim)">👤</div>
           <div><div class="sf-cn">⑥ 복지온 HR 조회 + Adapter</div><div class="sf-cs">수진자 관계 코드 매핑</div></div>
@@ -1160,7 +1168,7 @@ ul.clean li{margin:6px 0}
           </div>
         </div></div>
       </div>
-      <div class="sf-card sc" onclick="sfTog('sf-c5')">
+      <div class="sf-card sc" onclick="sfTog('sf-c5')" style="min-height:180px">
         <div class="sf-card-head">
           <div class="sf-ci" style="background:var(--sf-scz-dim)">📚</div>
           <div><div class="sf-cn">⑦ 복지온 이력 DB 조회 + Adapter</div><div class="sf-cs">복지온 시스템 내 2026년 YTD 신청이력 페치</div></div>
@@ -1176,7 +1184,7 @@ ul.clean li{margin:6px 0}
           </div>
         </div></div>
       </div>
-      <div class="sf-card sc" onclick="sfTog('sf-c6')">
+      <div class="sf-card sc" onclick="sfTog('sf-c6')" style="min-height:250px">
         <div class="sf-card-head">
           <div class="sf-ci" style="background:var(--sf-scz-dim)">📖</div>
           <div><div class="sf-cn">⑧ RAG 복지정책 조회</div><div class="sf-cs">의료비 복지 가이드 / 정책 스니펫 페치 (원본 텍스트 · 진단명·기관명 포함 가능)</div></div>
@@ -1200,74 +1208,110 @@ ul.clean li{margin:6px 0}
       </div>
     </div>
     <div class="sf-col-mid">
-      <div class="sf-arrow-cell" style="flex:1;min-height:300px">
-        <div class="sf-arr-lbl sf-td" style="font-size:8px;writing-mode:vertical-rl;opacity:.4;letter-spacing:.1em">SCZ 내부 실행</div>
+      <div class="sf-arrow-cell" style="flex:none;height:285px;gap:10px">
+        <div class="sf-arr to-scz" style="font-size:20px">←</div>
+        <div class="sf-arr-lbl" style="color:var(--sf-agent);font-size:9px">스킬 호출</div>
+        <div class="sf-arr to-agent" style="font-size:20px">→</div>
+        <div class="sf-arr-lbl" style="color:var(--sf-warn);font-size:9px">범주화 응답</div>
+      </div>
+      <div class="sf-arrow-cell" style="flex:none;height:190px"></div>
+      <div class="sf-arrow-cell" style="flex:none;height:140px;gap:10px;justify-content:flex-end">
+        <div class="sf-arr to-scz" style="font-size:20px">←</div>
+        <div class="sf-arr-lbl" style="color:var(--sf-agent);font-size:9px">스킬 호출</div>
+        <div class="sf-arr to-agent" style="font-size:20px">→</div>
+        <div class="sf-arr-lbl" style="color:var(--sf-warn);font-size:9px">범주화 응답</div>
+      </div>
+      <div class="sf-arrow-cell" style="flex:none;height:140px"></div>
+      <div class="sf-arrow-cell" style="flex:none;height:180px"></div>
+      <div class="sf-arrow-cell" style="flex:none;height:250px;gap:10px;justify-content:center">
+        <div class="sf-arr to-scz" style="font-size:20px">←</div>
+        <div class="sf-arr-lbl" style="color:var(--sf-agent);font-size:9px">스킬 호출</div>
+        <div class="sf-arr to-agent" style="font-size:20px">→</div>
+        <div class="sf-arr-lbl" style="color:var(--sf-warn);font-size:9px">범주화 응답</div>
       </div>
     </div>
     <div class="sf-col-agent">
-      <div class="sf-empty" style="height:100%"><span>SCZ 내부 실행 중<br>Agent 대기…</span></div>
+      <div class="sf-card ag" style="min-height:285px;display:flex;flex-direction:column">
+        <div class="sf-card-head">
+          <div class="sf-ci" style="background:var(--sf-agent-dim)">📤</div>
+          <div><div class="sf-cn">TURN 1 · <span style="color:var(--sf-ta)">OCR</span> 스킬 호출</div><div class="sf-cs">증빙 이미지 텍스트 추출 → 범주화 응답 수신</div></div>
+          <span class="sf-cb ag">AGENT</span>
+        </div>
+        <div class="sf-card-body open" style="flex:1"><div class="sf-cbi">
+          <div class="sf-dbox" style="border-color:var(--sf-warn-border);background:var(--sf-warn-dim)"><div class="sf-dl" style="color:var(--sf-warn)">📥 SCZ → Agent (범주화 훅 통과)</div>{진단카테고리:<span class="sf-tc">상기도감염</span>, 의료기관유형:<span class="sf-tc">외래-일반</span>, 진료일:<span class="sf-tg">"2026-04-10"</span>, 금액:<span class="sf-tg">48,500</span>, 비급여:<span class="sf-tg">0</span>, 사업자관리번호:<span class="sf-tg">"123-45-67890"</span>}</div>
+        </div></div>
+      </div>
+      <div class="sf-card ag" style="min-height:190px;display:flex;flex-direction:column">
+        <div class="sf-card-head">
+          <div class="sf-ci" style="background:var(--sf-agent-dim)">📤</div>
+          <div><div class="sf-cn">TURN 2 · <span style="color:var(--sf-ta)">건보 API</span> 스킬 호출</div><div class="sf-cs">병원 실존·폐업 검증 → 응답 수신</div></div>
+          <span class="sf-cb ag">AGENT</span>
+        </div>
+        <div class="sf-card-body open" style="flex:1"><div class="sf-cbi">
+          <div class="sf-dbox" style="border-color:var(--sf-warn-border);background:var(--sf-warn-dim)"><div class="sf-dl" style="color:var(--sf-warn)">📥 SCZ → Agent (범주화 훅 통과)</div>{건보등록:<span class="sf-tg">true</span>, 폐업:<span class="sf-tg">false</span>}</div>
+        </div></div>
+      </div>
+      <div class="sf-card ag" style="min-height:140px;display:flex;flex-direction:column">
+        <div class="sf-card-head">
+          <div class="sf-ci" style="background:var(--sf-agent-dim)">📤</div>
+          <div><div class="sf-cn">TURN 3 · <span style="color:var(--sf-ta)">SAP ERP</span> 스킬 호출</div><div class="sf-cs">연간 의료비 한도 조회 → 응답 수신</div></div>
+          <span class="sf-cb ag">AGENT</span>
+        </div>
+        <div class="sf-card-body open" style="flex:1"><div class="sf-cbi">
+          <div class="sf-dbox" style="border-color:var(--sf-warn-border);background:var(--sf-warn-dim)"><div class="sf-dl" style="color:var(--sf-warn)">📥 SCZ → Agent (범주화 훅 통과)</div>{본인한도:<span class="sf-tg">200,000</span>, 가족통합한도:<span class="sf-tg">300,000</span>}</div>
+        </div></div>
+      </div>
+      <div class="sf-card ag" style="min-height:140px;display:flex;flex-direction:column">
+        <div class="sf-card-head">
+          <div class="sf-ci" style="background:var(--sf-agent-dim)">📤</div>
+          <div><div class="sf-cn">TURN 4 · <span style="color:var(--sf-ta)">복지온 HR</span> 스킬 호출</div><div class="sf-cs">수진자 관계 코드 매핑 → 응답 수신</div></div>
+          <span class="sf-cb ag">AGENT</span>
+        </div>
+        <div class="sf-card-body open" style="flex:1"><div class="sf-cbi">
+          <div class="sf-dbox" style="border-color:var(--sf-warn-border);background:var(--sf-warn-dim)"><div class="sf-dl" style="color:var(--sf-warn)">📥 SCZ → Agent (범주화 훅 통과)</div>{수진자관계:<span class="sf-tv">"배우자"</span>}</div>
+        </div></div>
+      </div>
+      <div class="sf-card ag" style="min-height:180px;display:flex;flex-direction:column">
+        <div class="sf-card-head">
+          <div class="sf-ci" style="background:var(--sf-agent-dim)">📤</div>
+          <div><div class="sf-cn">TURN 5 · <span style="color:var(--sf-ta)">복지온 이력 DB</span> 스킬 호출</div><div class="sf-cs">2026년 YTD 신청이력 페치 → 범주화 응답 수신</div></div>
+          <span class="sf-cb ag">AGENT</span>
+        </div>
+        <div class="sf-card-body open" style="flex:1"><div class="sf-cbi">
+          <div class="sf-dbox" style="border-color:var(--sf-warn-border);background:var(--sf-warn-dim)"><div class="sf-dl" style="color:var(--sf-warn)">📥 SCZ → Agent (범주화 훅 통과)</div>이력 3건:<br>[<span class="sf-tg">2026-01-08</span>/<span class="sf-tc">치과일반</span>/자녀/55,000,<br>&nbsp;<span class="sf-tg">2026-03-15</span>/<span class="sf-tc">상기도감염</span>/본인/32,000,<br>&nbsp;<span class="sf-tg">2026-04-10</span>/<span class="sf-tc">상기도감염</span>/본인/10,000]</div>
+        </div></div>
+      </div>
+      <div class="sf-card ag" style="min-height:250px;display:flex;flex-direction:column">
+        <div class="sf-card-head">
+          <div class="sf-ci" style="background:var(--sf-agent-dim)">📤</div>
+          <div><div class="sf-cn">TURN 6 · <span style="color:var(--sf-ta)">RAG 복지정책</span> 스킬 호출</div><div class="sf-cs">의료비 복지 가이드 조회 → 범주화 응답 수신</div></div>
+          <span class="sf-cb ag">AGENT</span>
+        </div>
+        <div class="sf-card-body open" style="flex:1"><div class="sf-cbi">
+          <div class="sf-dbox" style="border-color:var(--sf-warn-border);background:var(--sf-warn-dim)"><div class="sf-dl" style="color:var(--sf-warn)">📥 SCZ → Agent (범주화 훅 통과)</div>{지원:<span class="sf-tg">Y</span>, 지원율:<span class="sf-tg">100%</span>, 가족한도:<span class="sf-tg">Y</span>, 제외:[<span class="sf-tc">치과일반</span>,미용,건강검진]}</div>
+        </div></div>
+      </div>
+      <div style="margin:12px 14px;padding:10px 12px;background:rgba(255,112,67,.05);border:1px solid var(--sf-warn-border);border-radius:8px;font-size:10px;line-height:1.7">
+        <strong style="color:var(--sf-warn)">💡 핵심 포인트</strong><br>
+        • 매 턴 Agent가 "다음엔 이 스킬"이라고 SCZ에 요청 → SCZ는 실행 후 <strong style="color:var(--sf-warn)">범주화 훅</strong>을 거쳐 응답<br>
+        • Agent는 응답마다 보고 "잘 왔네 다음 스킬" 또는 "이상해 재시도"를 즉석 판단<br>
+        • 모든 응답이 범주화 통과 → Agent는 <strong>민감정보 원본을 절대 못 봄</strong>
+      </div>
     </div>
 
     <!-- ═══════ PHASE 3 ═══════ -->
     <div class="sf-phase">
-      <div class="sf-pn" style="background:var(--sf-warn-dim);color:var(--sf-warn);border:1px solid var(--sf-warn-border)">3</div>
-      범주화 엔진 — OCR·이력·RAG 스니펫 전체 걸쳐 PII 마스킹 + 진단명·기관명 범주화 + 단일 페이로드 조립 후 반환
+      <div class="sf-pn" style="background:var(--sf-agent-dim);color:var(--sf-agent);border:1px solid var(--sf-agent-border)">3</div>
+      Agent 대화 맥락 — Phase 2 매 턴 범주화 응답이 자연스럽게 누적된 최종 상태 (SCZ 추가 처리 없음)
     </div>
 
-    <div class="sf-col-scz">
-      <div class="sf-card wn" onclick="sfTog('sf-e1')">
-        <div class="sf-card-head">
-          <div class="sf-ci" style="background:var(--sf-warn-dim)">🧠</div>
-          <div><div class="sf-cn">⑨ 범주화 스킬</div><div class="sf-cs">OCR·이력·RAG 스니펫 전체 대상 PII 마스킹 + 범주 태그 생성 + 페이로드 조립</div></div>
-          <span class="sf-cb wn">범주화</span>
-        </div>
-        <div class="sf-card-body open" id="sf-e1"><div class="sf-cbi">
-          <div class="sf-dbox w">
-            <div class="sf-dl">📋 spec 기반 필드별 처리 (OCR·이력·RAG 스니펫 전체)</div>
-            <span class="sf-tp">급성 편도염</span> → J069 → <span class="sf-tc">상기도감염</span><br>
-            <span class="sf-tp">좋은이비인후과</span> → 기관코드 → <span class="sf-tc">외래-일반</span> (병원명 차단)<br>
-            <span class="sf-tp">치아교정</span> → K00 → <span class="sf-tc">치과일반</span><br>
-            <span class="sf-tp">급성인두염</span> → J029 → <span class="sf-tc">상기도감염</span><br>
-            <span class="sf-tp">급성편도염</span> → J069 → <span class="sf-tc">상기도감염</span><br>
-            <span class="sf-td">// RAG 스니펫 내부도 동일 spec 적용</span><br>
-            <span class="sf-tp">"상기도 감염(J00~J06)"</span> → <span class="sf-tc">상기도감염</span><br>
-            <span class="sf-tp">"이비인후과·소아과"</span> → <span class="sf-tc">외래-일반</span>
-          </div>
-          <div class="sf-dbox d">
-            <div class="sf-dl">🔴 PII — Agent에 영구 차단</div>
-            <span class="sf-tp">홍길동 · 900101-1234567 · 급성 편도염 · 좋은이비인후과 · 김영희</span>
-          </div>
-          <div class="sf-dbox p" style="margin-top:10px">
-            <div class="sf-dl">🟢 앞단 수집 일반 데이터 (패스스루 + 검증값) — 범주화와 함께 페이로드 조립</div>
-            <span class="sf-tg">// 패스스루 (OCR 추출 · 비PII 원본)</span><br>
-            신청금액: <span class="sf-tg">48,500</span><br>
-            진료일: <span class="sf-tg">2026-04-10</span><br>
-            비급여금액: <span class="sf-tg">0</span><br>
-            <br>
-            <span class="sf-tv">// 검증값 (API Adapter 정제 결과)</span><br>
-            병원검증: { 건보등록: <span class="sf-tg">true</span>, 폐업: <span class="sf-tg">false</span> }<span class="sf-td"> ← 건보 API</span><br>
-            본인한도: <span class="sf-tg">200,000</span> · 가족통합한도: <span class="sf-tg">300,000</span><span class="sf-td"> ← SAP ERP</span><br>
-            수진자관계: <span class="sf-tv">"배우자"</span><span class="sf-td"> ← 복지온 HR</span><br>
-            복지정책: {적용진단:<span class="sf-tc">상기도감염</span>, 적용기관:<span class="sf-tc">외래-일반</span>, 지원:<span class="sf-tg">Y</span>, 지원율:<span class="sf-tg">100%</span>, 가족한도:<span class="sf-tg">Y</span>, 제외:[<span class="sf-tc">치과일반</span>,미용,건강검진]}<span class="sf-td"> ← RAG(범주화 정규화 후)</span><br>
-            신청이력: <span class="sf-td">← 복지온 이력 DB (진단명은 위에서 범주화)</span><br>
-            &nbsp;{진료일:<span class="sf-tg">2026-01-08</span>, 진단:<span class="sf-tp">치아교정</span>→<span class="sf-tc">치과일반</span>, 수진자:<span class="sf-tv">자녀</span>, 금액:<span class="sf-tg">55,000</span>}<br>
-            &nbsp;{진료일:<span class="sf-tg">2026-03-15</span>, 진단:<span class="sf-tp">급성인두염</span>→<span class="sf-tc">상기도감염</span>, 수진자:<span class="sf-tv">본인</span>, 금액:<span class="sf-tg">32,000</span>}<br>
-            &nbsp;{진료일:<span class="sf-tg">2026-04-10</span>, 진단:<span class="sf-tp">급성편도염</span>→<span class="sf-tc">상기도감염</span>, 수진자:<span class="sf-tv">본인</span>, 금액:<span class="sf-tg">10,000</span>}
-          </div>
-        </div></div>
-      </div>
-    </div>
-    <div class="sf-col-mid">
-      <div class="sf-arrow-cell" style="min-height:120px">
-        <div class="sf-arr to-agent" style="font-size:24px">→</div>
-        <div class="sf-arr-lbl" style="color:var(--sf-scz)">범주화 + 정책<br>단일 페이로드 반환</div>
-      </div>
-    </div>
+    <div class="sf-col-scz"><div class="sf-empty"><span>SCZ 추가 처리 없음<br>범주화는 매 턴 훅으로 이미 완료</span></div></div>
+    <div class="sf-col-mid"><div class="sf-arrow-cell" style="min-height:120px"></div></div>
     <div class="sf-col-agent">
       <div class="sf-card ag" onclick="sfTog('sf-e1r')">
         <div class="sf-card-head">
           <div class="sf-ci" style="background:var(--sf-agent-dim)">📦</div>
-          <div><div class="sf-cn">최종 페이로드 수신</div><div class="sf-cs">PII 없음 · 범주화 태그 + 검증값 + 패스스루</div></div>
+          <div><div class="sf-cn">Agent 누적 맥락 (최종 상태)</div><div class="sf-cs">PII 없음 · 범주 태그 + 검증값 + 패스스루 · Phase 2 턴 1~6의 자연스러운 누적 결과</div></div>
           <span class="sf-cb ag">AGENT</span>
         </div>
         <div class="sf-card-body open" id="sf-e1r"><div class="sf-cbi">
