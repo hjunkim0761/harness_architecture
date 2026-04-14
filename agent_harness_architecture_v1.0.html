@@ -583,8 +583,7 @@ ul.clean li{margin:6px 0}
 #tab-flow .sf-card.wn{border-color:var(--sf-warn-border)}
 #tab-flow .sf-card.ps{border-color:var(--sf-pass-border)}
 #tab-flow .sf-card.dg{border-color:var(--sf-danger-border)}
-#tab-flow .sf-card-head{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;user-select:none}
-#tab-flow .sf-card-head:hover{background:rgba(255,255,255,.02)}
+#tab-flow .sf-card-head{display:flex;align-items:center;gap:8px;padding:9px 12px;user-select:none}
 #tab-flow .sf-ci{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
 #tab-flow .sf-cn{font-size:11.5px;font-weight:600;flex:1;line-height:1.35;color:var(--sf-text)}
 #tab-flow .sf-cs{font-size:9.5px;color:var(--sf-dim);font-family:var(--sf-mono);line-height:1.4}
@@ -593,8 +592,8 @@ ul.clean li{margin:6px 0}
 #tab-flow .sf-cb.ag{background:var(--sf-agent-dim);color:var(--sf-agent);border:1px solid var(--sf-agent-border)}
 #tab-flow .sf-cb.ps{background:var(--sf-pass-dim);color:var(--sf-pass);border:1px solid var(--sf-pass-border)}
 #tab-flow .sf-cb.wn{background:var(--sf-warn-dim);color:var(--sf-warn);border:1px solid var(--sf-warn-border)}
-#tab-flow .sf-card-body{max-height:0;overflow:hidden;transition:max-height .4s ease}
-#tab-flow .sf-card-body.open{max-height:1600px}
+#tab-flow .sf-card-body{max-height:none;overflow:visible}
+#tab-flow .sf-card-body.open{max-height:none}
 #tab-flow .sf-cbi{padding:10px 12px;border-top:1px solid var(--sf-border)}
 #tab-flow .sf-dbox{background:var(--sf-bg3);border:1px solid var(--sf-border);border-radius:6px;padding:8px 10px;font-family:var(--sf-mono);font-size:10px;line-height:1.9;margin-bottom:7px}
 #tab-flow .sf-dbox:last-child{margin-bottom:0}
@@ -1051,13 +1050,14 @@ ul.clean li{margin:6px 0}
             <span class="sf-tv">2</span> <span class="sf-tg">nhis_verify</span> — 건보 API 병원 검증<br>
             <span class="sf-tv">3</span> <span class="sf-tg">erp_limit</span> — SAP 연간한도 조회<br>
             <span class="sf-tv">4</span> <span class="sf-tg">hr_relation</span> — 복지온 수진자관계 조회<br>
-            <span class="sf-tv">5</span> <span class="sf-tg">history_fetch</span> — 이력 DB YTD 조회<br>
-            <span class="sf-tv">6</span> <span class="sf-tc">categorize</span> — PII 마스킹 + 범주화 + 페이로드 조립<br>
+            <span class="sf-tv">5</span> <span class="sf-tg">history_fetch</span> — 복지온 이력 DB YTD 조회<br>
+            <span class="sf-tv">6</span> <span class="sf-tg">welfare_policy_rag</span> — 의료비 복지 가이드 RAG 스니펫 페치<br>
+            <span class="sf-tv">7</span> <span class="sf-tc">categorize</span> — OCR·이력·RAG 전체 PII 마스킹 + 범주화 + 페이로드 조립<br>
             <span class="sf-td">// 최종 액션 (Phase 5 · Agent 판단 후 호출)</span><br>
-            <span class="sf-tv">7</span> <span class="sf-tg">welfareon_update</span> — 복지온 관리자 상태 반영<br>
-            <span class="sf-tv">8</span> <span class="sf-tg">evidence_transfer</span> — 복지온 증빙이력 전송<br>
-            <span class="sf-tv">9</span> <span class="sf-tg">notify</span> — 사내 메신저 알림 발송<br>
-            <span class="sf-tv">10</span> <span class="sf-tg">audit_log</span> — 검증 이력 저장
+            <span class="sf-tv">8</span> <span class="sf-tg">welfareon_update</span> — 복지온 관리자 상태 반영<br>
+            <span class="sf-tv">9</span> <span class="sf-tg">evidence_transfer</span> — 복지온 증빙이력 전송<br>
+            <span class="sf-tv">10</span> <span class="sf-tg">notify</span> — 사내 메신저 알림 발송<br>
+            <span class="sf-tv">11</span> <span class="sf-tg">audit_log</span> — 검증 이력 저장
           </div>
           <div class="sf-dbox w">
             <div class="sf-dl">📋 categorization_spec (레시피 정의)</div>
@@ -1141,7 +1141,7 @@ ul.clean li{margin:6px 0}
       <div class="sf-card sc" onclick="sfTog('sf-c5')">
         <div class="sf-card-head">
           <div class="sf-ci" style="background:var(--sf-scz-dim)">📚</div>
-          <div><div class="sf-cn">⑦ 이력 DB 조회 + Adapter</div><div class="sf-cs">2026년 YTD 신청이력 페치</div></div>
+          <div><div class="sf-cn">⑦ 복지온 이력 DB 조회 + Adapter</div><div class="sf-cs">복지온 시스템 내 2026년 YTD 신청이력 페치</div></div>
           <span class="sf-cb sc">SCZ</span>
         </div>
         <div class="sf-card-body" id="sf-c5"><div class="sf-cbi">
@@ -1151,6 +1151,28 @@ ul.clean li{margin:6px 0}
             건②: 2026-03-15 · <span class="sf-tp">급성인두염</span> · 본인 · 32,000<br>
             건③: 2026-04-10 · <span class="sf-tp">급성편도염</span> · 본인 · 10,000<br>
             <span class="sf-td">→ 진단명 PII → 범주화 스킬 이관</span>
+          </div>
+        </div></div>
+      </div>
+      <div class="sf-card sc" onclick="sfTog('sf-c6')">
+        <div class="sf-card-head">
+          <div class="sf-ci" style="background:var(--sf-scz-dim)">📖</div>
+          <div><div class="sf-cn">⑧ RAG 복지정책 조회</div><div class="sf-cs">의료비 복지 가이드 / 정책 스니펫 페치 (원본 텍스트 · 진단명·기관명 포함 가능)</div></div>
+          <span class="sf-cb sc">SCZ</span>
+        </div>
+        <div class="sf-card-body" id="sf-c6"><div class="sf-cbi">
+          <div class="sf-dbox s">
+            <div class="sf-dl">🔎 RAG 쿼리 (사번 · 진단명 · 병원명 등 원본 키)</div>
+            query: {진단:<span class="sf-tp">급성 편도염</span>, 병원:<span class="sf-tp">좋은이비인후과</span>, 수진자:<span class="sf-tv">배우자</span>}<br>
+            <span class="sf-td">→ 의료비 복지 가이드 인덱스 검색</span>
+          </div>
+          <div class="sf-dbox s">
+            <div class="sf-dl">📖 RAG 응답 (원본 스니펫 · 진단명/기관명 포함)</div>
+            § "<span class="sf-tp">상기도 감염(J00~J06)</span> 외래 진료 시 본인부담분 100% 지원, 가족 통합한도 적용"<br>
+            § "<span class="sf-tp">치아교정 · 미용 · 건강검진</span>은 지원 제외"<br>
+            § "의원급/병원급 외래 <span class="sf-tp">(예: 이비인후과·소아과 등)</span>는 일반외래로 분류"<br>
+            근거: <span class="sf-td">「의료비 복지 가이드 v2026.1」 §3.2 / §4.1</span><br>
+            <span class="sf-td">→ 스니펫 내 진단명·기관명 PII → 범주화 스킬에서 일괄 정규화</span>
           </div>
         </div></div>
       </div>
@@ -1167,24 +1189,27 @@ ul.clean li{margin:6px 0}
     <!-- ═══════ PHASE 3 ═══════ -->
     <div class="sf-phase">
       <div class="sf-pn" style="background:var(--sf-warn-dim);color:var(--sf-warn);border:1px solid var(--sf-warn-border)">3</div>
-      범주화 엔진 — 레시피 spec 적용 · PII 마스킹 · 단일 페이로드 조립 후 반환
+      범주화 엔진 — OCR·이력·RAG 스니펫 전체 걸쳐 PII 마스킹 + 진단명·기관명 범주화 + 단일 페이로드 조립 후 반환
     </div>
 
     <div class="sf-col-scz">
       <div class="sf-card wn" onclick="sfTog('sf-e1')">
         <div class="sf-card-head">
           <div class="sf-ci" style="background:var(--sf-warn-dim)">🧠</div>
-          <div><div class="sf-cn">⑧ 범주화 스킬</div><div class="sf-cs">PII 마스킹 → spec 적용 → 전체 페이로드 조립</div></div>
+          <div><div class="sf-cn">⑨ 범주화 스킬</div><div class="sf-cs">OCR·이력·RAG 스니펫 전체 대상 PII 마스킹 + 범주 태그 생성 + 페이로드 조립</div></div>
           <span class="sf-cb wn">범주화</span>
         </div>
         <div class="sf-card-body open" id="sf-e1"><div class="sf-cbi">
           <div class="sf-dbox w">
-            <div class="sf-dl">📋 spec 기반 필드별 처리</div>
+            <div class="sf-dl">📋 spec 기반 필드별 처리 (OCR·이력·RAG 스니펫 전체)</div>
             <span class="sf-tp">급성 편도염</span> → J069 → <span class="sf-tc">상기도감염</span><br>
             <span class="sf-tp">좋은이비인후과</span> → 기관코드 → <span class="sf-tc">외래-일반</span> (병원명 차단)<br>
             <span class="sf-tp">치아교정</span> → K00 → <span class="sf-tc">치과일반</span><br>
             <span class="sf-tp">급성인두염</span> → J029 → <span class="sf-tc">상기도감염</span><br>
-            <span class="sf-tp">급성편도염</span> → J069 → <span class="sf-tc">상기도감염</span>
+            <span class="sf-tp">급성편도염</span> → J069 → <span class="sf-tc">상기도감염</span><br>
+            <span class="sf-td">// RAG 스니펫 내부도 동일 spec 적용</span><br>
+            <span class="sf-tp">"상기도 감염(J00~J06)"</span> → <span class="sf-tc">상기도감염</span><br>
+            <span class="sf-tp">"이비인후과·소아과"</span> → <span class="sf-tc">외래-일반</span>
           </div>
           <div class="sf-dbox d">
             <div class="sf-dl">🔴 PII — Agent에 영구 차단</div>
@@ -1201,7 +1226,8 @@ ul.clean li{margin:6px 0}
             병원검증: { 건보등록: <span class="sf-tg">true</span>, 폐업: <span class="sf-tg">false</span> }<span class="sf-td"> ← 건보 API</span><br>
             본인한도: <span class="sf-tg">200,000</span> · 가족통합한도: <span class="sf-tg">300,000</span><span class="sf-td"> ← SAP ERP</span><br>
             수진자관계: <span class="sf-tv">"배우자"</span><span class="sf-td"> ← 복지온 HR</span><br>
-            신청이력: <span class="sf-td">← 이력 DB (진단명은 위에서 범주화)</span><br>
+            복지정책: {적용진단:<span class="sf-tc">상기도감염</span>, 적용기관:<span class="sf-tc">외래-일반</span>, 지원:<span class="sf-tg">Y</span>, 지원율:<span class="sf-tg">100%</span>, 가족한도:<span class="sf-tg">Y</span>, 제외:[<span class="sf-tc">치과일반</span>,미용,건강검진]}<span class="sf-td"> ← RAG(범주화 정규화 후)</span><br>
+            신청이력: <span class="sf-td">← 복지온 이력 DB (진단명은 위에서 범주화)</span><br>
             &nbsp;{진료일:<span class="sf-tg">2026-01-08</span>, 진단:<span class="sf-tp">치아교정</span>→<span class="sf-tc">치과일반</span>, 수진자:<span class="sf-tv">자녀</span>, 금액:<span class="sf-tg">55,000</span>}<br>
             &nbsp;{진료일:<span class="sf-tg">2026-03-15</span>, 진단:<span class="sf-tp">급성인두염</span>→<span class="sf-tc">상기도감염</span>, 수진자:<span class="sf-tv">본인</span>, 금액:<span class="sf-tg">32,000</span>}<br>
             &nbsp;{진료일:<span class="sf-tg">2026-04-10</span>, 진단:<span class="sf-tp">급성편도염</span>→<span class="sf-tc">상기도감염</span>, 수진자:<span class="sf-tv">본인</span>, 금액:<span class="sf-tg">10,000</span>}
@@ -1212,7 +1238,7 @@ ul.clean li{margin:6px 0}
     <div class="sf-col-mid">
       <div class="sf-arrow-cell" style="min-height:120px">
         <div class="sf-arr to-agent" style="font-size:24px">→</div>
-        <div class="sf-arr-lbl" style="color:var(--sf-scz)">전체 페이로드<br>한번에 반환</div>
+        <div class="sf-arr-lbl" style="color:var(--sf-scz)">범주화 + 정책<br>단일 페이로드 반환</div>
       </div>
     </div>
     <div class="sf-col-agent">
@@ -1234,6 +1260,7 @@ ul.clean li{margin:6px 0}
             <span class="sf-tv">"수진자관계"</span>: <span class="sf-tv">"배우자"</span><br>
             <span class="sf-tv">"본인한도"</span>: <span class="sf-tv">200,000</span><br>
             <span class="sf-tv">"가족통합한도"</span>: <span class="sf-tv">300,000</span><br>
+            <span class="sf-tv">"복지정책"</span>: {<span class="sf-tc">"적용진단"</span>:<span class="sf-tc">"상기도감염"</span>, <span class="sf-tc">"적용기관"</span>:<span class="sf-tc">"외래-일반"</span>, 지원:<span class="sf-tg">Y</span>, 지원율:<span class="sf-tg">100%</span>, 가족한도:<span class="sf-tg">Y</span>, 제외:[<span class="sf-tc">치과일반</span>,미용,건강검진]}<span class="sf-td"> ← RAG(범주화 정규화)</span><br>
             <span class="sf-tv">"신청이력"</span>: [<br>
             &nbsp;{<span class="sf-tg">01-08</span>, <span class="sf-tc">치과일반</span>, <span class="sf-tv">자녀</span>, <span class="sf-tg">55,000</span>}<br>
             &nbsp;{<span class="sf-tg">03-15</span>, <span class="sf-tc">상기도감염</span>, <span class="sf-tv">본인</span>, <span class="sf-tg">32,000</span>}<br>
@@ -1265,7 +1292,7 @@ ul.clean li{margin:6px 0}
       <div class="sf-card ag" onclick="sfTog('sf-g1')">
         <div class="sf-card-head">
           <div class="sf-ci" style="background:var(--sf-agent-dim)">🤖</div>
-          <div><div class="sf-cn">⑨ Agent 판단</div><div class="sf-cs">범주값 조합 해석 · 시스템 직접 접근 없음</div></div>
+          <div><div class="sf-cn">⑩ Agent 판단</div><div class="sf-cs">범주값 조합 해석 · 시스템 직접 접근 없음</div></div>
           <span class="sf-cb ag">AGENT</span>
         </div>
         <div class="sf-card-body open" id="sf-g1"><div class="sf-cbi">
@@ -1318,7 +1345,7 @@ ul.clean li{margin:6px 0}
       <div class="sf-card ps" onclick="sfTog('sf-h1r')">
         <div class="sf-card-head">
           <div class="sf-ci" style="background:var(--sf-pass-dim)">🎯</div>
-          <div><div class="sf-cn">⑩ 최종 액션 스킬 호출 + 응답 생성</div><div class="sf-cs">welfareon_update · evidence_transfer · notify · audit_log 스킬 실행 요청 + PII 미포함 자연어 응답</div></div>
+          <div><div class="sf-cn">⑪ 최종 액션 스킬 호출 + 응답 생성</div><div class="sf-cs">welfareon_update · evidence_transfer · notify · audit_log 스킬 실행 요청 + PII 미포함 자연어 응답</div></div>
           <span class="sf-cb ps">AGENT</span>
         </div>
         <div class="sf-card-body open" id="sf-h1r"><div class="sf-cbi">
@@ -1344,7 +1371,7 @@ ul.clean li{margin:6px 0}
       <div class="sf-card sc" onclick="sfTog('sf-h1')">
         <div class="sf-card-head">
           <div class="sf-ci" style="background:var(--sf-scz-dim)">⚡</div>
-          <div><div class="sf-cn">⑪ SCZ 최종 액션 실행</div><div class="sf-cs">복지온 반영 · 증빙이력 · 검증이력 · 알림</div></div>
+          <div><div class="sf-cn">⑫ SCZ 최종 액션 실행</div><div class="sf-cs">복지온 반영 · 증빙이력 · 검증이력 · 알림</div></div>
           <span class="sf-cb sc">SCZ</span>
         </div>
         <div class="sf-card-body open" id="sf-h1"><div class="sf-cbi">
@@ -1954,9 +1981,9 @@ ul.clean li{margin:6px 0}
 <span class="c">→</span> Agent가 실존 병원 여부 판단</div>
             </div>
             <div>
-              <div class="categ-flow-row"><span class="categ-flow-chip" style="background:#1e3a5f22;color:#60a5fa">이력DB 신청이력 조회</span></div>
+              <div class="categ-flow-row"><span class="categ-flow-chip" style="background:#1e3a5f22;color:#60a5fa">복지온 이력DB 신청이력 조회</span></div>
               <div class="categ-code" style="font-size:10px"><span class="c">입력:</span> 사번 EMP-20145
-<span class="c">조회:</span> 의료비 신청 이력 DB
+<span class="c">조회:</span> 복지온 의료비 신청 이력 DB
 <span class="c">원본:</span> <span class="r">3건 상세 (이름·주민번호 포함)</span>
 <span class="c">전달:</span> 🟢 이력 3건 (PII 제거, 구조 유지)
 <span class="c">→</span> Agent가 중복 여부 교차 비교</div>
@@ -1976,7 +2003,7 @@ ul.clean li{margin:6px 0}
         <div class="categ-detail-card">
           <div class="categ-detail-card-title">AWS 구성</div>
           <div class="categ-flow-note" style="line-height:2">
-            • <strong style="color:#60a5fa">RDS</strong> — ERP, HR, 이력 DB<br>
+            • <strong style="color:#60a5fa">RDS</strong> — ERP, HR, 복지온 이력 DB<br>
             • <strong style="color:#60a5fa">ElastiCache</strong> — 자주 쓰는 조회 캐싱<br>
             • <strong style="color:#60a5fa">Step Functions</strong> — 조회 순서 오케스트레이션<br>
             • GPU 없음, 비용 매우 낮음
@@ -2346,10 +2373,7 @@ function setupWorkflow(){
 }
 
 // ── 스윔레인 카드 토글 ──
-function sfTog(id){
-  const b=document.getElementById(id);
-  if(b) b.classList.toggle('open');
-}
+function sfTog(id){ /* disabled — 카드 항상 펼친 상태 */ }
 
 setupTabs();
 setupDetailPanel();
