@@ -1008,14 +1008,36 @@ ul.clean li{margin:6px 0}
             <span class="sf-tg">medical_claim_recipe</span> — 의료비 신청<br>
             <span class="sf-tg">condolence_recipe</span> — 경조사 신청<br>
             <span class="sf-tg">voucher_verify_recipe</span> — 전표 검증<br>
-            <span class="sf-td">→ Agent가 MCP로 조회 · 실행 계획 수립</span>
+            <span style="color:var(--text-bright);font-weight:700">→ Agent가 MCP로 조회 · 실행 계획 수립</span>
+          </div>
+          <div class="sf-dbox s" style="border-color:var(--sf-agent-border)">
+            <div class="sf-dl">📄 medical_claim_recipe.yaml — 축약 워크플로 (레시피가 전체 흐름을 지시)</div>
+            <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:9.5px;line-height:1.6;margin-top:4px">
+              <span style="background:var(--sf-pass-dim);color:var(--sf-pass);border:1px solid var(--sf-pass-border);padding:2px 6px;border-radius:4px;font-weight:700">① 요청 수신</span>
+              <span style="color:var(--sf-dim)">→</span>
+              <span style="background:var(--sf-scz-dim);color:var(--sf-scz);border:1px solid var(--sf-scz-border);padding:2px 6px;border-radius:4px;font-weight:700">② OCR·건보·ERP·HR·이력 병렬 조회</span>
+              <span style="color:var(--sf-dim)">→</span>
+              <span style="background:var(--sf-scz-dim);color:var(--sf-scz);border:1px solid var(--sf-scz-border);padding:2px 6px;border-radius:4px;font-weight:700">③ RAG 복지정책</span>
+              <span style="color:var(--sf-dim)">→</span>
+              <span style="background:var(--sf-warn-dim);color:var(--sf-warn);border:1px solid var(--sf-warn-border);padding:2px 6px;border-radius:4px;font-weight:700">④ 범주화·페이로드 조립</span>
+              <span style="color:var(--sf-dim)">→</span>
+              <span style="background:var(--sf-agent-dim);color:var(--sf-agent);border:1px solid var(--sf-agent-border);padding:2px 6px;border-radius:4px;font-weight:700">⑤ Agent 판단 (한도·급여성·중복·정책·기관)</span>
+              <span style="color:var(--sf-dim)">→</span>
+              <span style="background:var(--sf-scz-dim);color:var(--sf-scz);border:1px solid var(--sf-scz-border);padding:2px 6px;border-radius:4px;font-weight:700">⑥ 복지온·이력·알림 실행</span>
+              <span style="color:var(--sf-dim)">→</span>
+              <span style="background:var(--sf-pass-dim);color:var(--sf-pass);border:1px solid var(--sf-pass-border);padding:2px 6px;border-radius:4px;font-weight:700">⑦ 자연어 응답</span>
+            </div>
+            <div style="margin-top:8px;font-size:10px;color:var(--text-bright);font-weight:700;line-height:1.6">
+              레시피 = 업무 지시문 · 스킬 체인 · categorization_spec · 정책 참조를 한 파일에 담은 에셋<br>
+              → 이 지시문 하나로 하네스 전체 워크플로가 세팅되고 실행됨
+            </div>
           </div>
           <div class="sf-dbox s">
             <div class="sf-dl">🧩 등록된 스킬 (실행 단위 에셋)</div>
             <span class="sf-tg">ocr</span> · <span class="sf-tg">nhis_verify</span> · <span class="sf-tg">erp_limit</span> · <span class="sf-tg">hr_relation</span><br>
             <span class="sf-tg">history_fetch</span> · <span class="sf-tc">categorize</span> · <span class="sf-tg">welfareon_update</span><br>
             <span class="sf-tg">evidence_transfer</span> · <span class="sf-tg">notify</span> · <span class="sf-tg">audit_log</span><br>
-            <span class="sf-td">→ 레시피가 참조 · SCZ 내부에서만 실행</span>
+            <span style="color:var(--text-bright);font-weight:700">→ 레시피가 참조 · SCZ 내부에서만 실행</span>
           </div>
         </div></div>
       </div>
